@@ -1,8 +1,0 @@
-6: eth0@if7: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
-    link/ether 00:00:00:aa:00:00 brd ff:ff:ff:ff:ff:ff link-netnsid 0
-    inet 10.0.0.20/24 brd 10.0.0.255 scope global eth0
-       valid_lft forever preferred_lft forever
-    inet6 2001::14/64 scope global 
-       valid_lft forever preferred_lft forever
-    inet6 fe80::200:ff:feaa:0/64 scope link 
-       valid_lft forever preferred_lft forever
