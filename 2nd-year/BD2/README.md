@@ -19,11 +19,11 @@ The system processes complex queries to extract business value, answering critic
 * **Infrastructure:** Docker environments for consistent deployment across all three paradigms.
 
 ### 📂 Repository Structure
-* 📄 **`PL2G1_final_bd2.pdf`:** Complete final report detailing the architecture, decisions, and queries for all three stages.
-* 📁 **`scripts/`:** Main folder containing all database interactions.
-  * 📁 **`sql/`:** DDL scripts for table creation, CSV processing, and the 6 analytical queries in SQL.
-  * 📁 **`cassandra/`:** Keyspace and Column Families creation, `COPY` commands for CSV data population, and the 6 analytical queries in CQL.
-  * 📁 **`neo4j/`:** Graph creation scripts (Constraints, `LOAD CSV` for nodes/relationships), and the 6 analytical queries in Cypher.
+* 📄 **[`PL2G1_final_bd2.pdf`](./PL2G1_final_bd2.pdf):** Complete final report detailing the architecture, decisions, and queries for all three stages.
+* 📁 **[`scripts/`](./scripts/):** Main folder containing all database interactions.
+  * 📁 **[`sql/`](./scripts/sql/):** DDL scripts for table creation, CSV processing, and the 6 analytical queries in SQL.
+  * 📁 **[`cassandra/`](./scripts/cassandra/):** Keyspace and Column Families creation, `COPY` commands for CSV data population, and the 6 analytical queries in CQL.
+  * 📁 **[`neo4j/`](./scripts/neo4j/):** Graph creation scripts (Constraints, `LOAD CSV` for nodes/relationships), and the 6 analytical queries in Cypher.
 
 ---
 ### 👥 Authors
