@@ -29,6 +29,6 @@ Compile the source code:
 
 ---
 ### 👥 Authors (Group 24)
-* Gabriela Sousa e Santos (A104359)
-* Mariana Silva Gomes (A110943)
-* Matilde Pires Cunha (A111787)
+* Gabriela Sousa e Santos (a104359)
+* Mariana Silva Gomes (a110943)
+* Matilde Pires Cunha (a111787)
