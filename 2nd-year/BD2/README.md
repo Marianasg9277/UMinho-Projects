@@ -19,7 +19,7 @@ The system processes complex queries to extract business value, answering critic
 * **Infrastructure:** Docker environments for consistent deployment across all three paradigms.
 
 ### 📂 Repository Structure
-* 📄 **`PL2G1_etapa3_bd2.pdf`:** Complete final report detailing the architecture, decisions, and queries for all three stages.
+* 📄 **`PL2G1_final_bd2.pdf`:** Complete final report detailing the architecture, decisions, and queries for all three stages.
 * 📁 **`scripts/`:** Main folder containing all database interactions.
   * 📁 **`sql/`:** DDL scripts for table creation, CSV processing, and the 6 analytical queries in SQL.
   * 📁 **`cassandra/`:** Keyspace and Column Families creation, `COPY` commands for CSV data population, and the 6 analytical queries in CQL.
