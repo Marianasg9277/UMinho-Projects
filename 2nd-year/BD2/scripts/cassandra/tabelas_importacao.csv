@@ -1,0 +1,138 @@
+-- pergunta 1
+DROP KEYSPACE IF EXISTS bd2ks;
+
+CREATE KEYSPACE bd2ks WITH REPLICATION = {'class': 'SimpleStrategy', 'replication_factor': 1};
+
+USE bd2ks;
+
+CREATE TABLE top_receita (
+    id_fixo text,
+    receita_total decimal,
+    categoria text,    
+    PRIMARY KEY (id_fixo, receita_total, categoria)
+) WITH CLUSTERING ORDER BY (receita_total DESC);
+
+USE bd2ks;
+COPY top_receita(id_fixo, categoria, receita_total)
+FROM '/var/lib/cassandra/pergunta1.csv'
+WITH DELIMITER=';';
+
+-- pergunta 2
+DROP KEYSPACE IF EXISTS bd2ks;
+
+CREATE KEYSPACE bd2ks WITH REPLICATION = {'class': 'SimpleStrategy', 'replication_factor': 1};
+
+USE bd2ks;
+
+CREATE TABLE best_seller_estado (
+    id_fixo text,
+    quantidade_vendida int,
+    estado text,
+    id_produto text,
+    categoria text,
+    PRIMARY KEY (id_fixo, quantidade_vendida, estado, id_produto)
+) WITH CLUSTERING ORDER BY (quantidade_vendida DESC, estado ASC, id_produto ASC);
+
+USE bd2ks;
+
+COPY best_seller_estado (id_fixo, estado, id_produto, categoria, quantidade_vendida) 
+FROM '/var/lib/cassandra/questao2.csv' 
+WITH DELIMITER=';';
+
+-- pergunta 3
+DROP KEYSPACE IF EXISTS p3;
+
+CREATE KEYSPACE p3 WITH REPLICATION = {'class': 'SimpleStrategy', 'replication_factor': 1};
+
+USE p3;
+
+CREATE TABLE fluxo_vendas (
+    ano text,
+    total_fluxo int,
+    seller_state text,
+    customer_state text,
+    PRIMARY KEY (ano, total_fluxo, seller_state, customer_state)
+) WITH CLUSTERING ORDER BY (total_fluxo DESC);
+
+USE p3;
+
+COPY fluxo_vendas (ano, customer_state, seller_state, total_fluxo)
+FROM '/var/lib/cassandra/pergunta3.csv'
+WITH DELIMITER=';';
+
+-- pergunta 4
+DROP KEYSPACE IF EXISTS bd2_vendas;
+
+CREATE KEYSPACE bd2_vendas WITH REPLICATION = {'class': 'SimpleStrategy', 'replication_factor': 1};
+
+USE bd2_vendas;
+
+CREATE TABLE bd2_vendas.sucesso_vendas (
+    categoria text,
+    total_entregue int,
+    total_cancelado int,
+    taxa_sucesso decimal,
+    faturacao_perdida decimal,
+    PRIMARY KEY (categoria)
+);
+
+USE bd2_vendas;
+
+COPY bd2_vendas.sucesso_vendas (categoria, total_entregue, total_cancelado, taxa_sucesso, faturacao_perdida) 
+FROM '/var/lib/cassandra/pergunta4.csv' 
+WITH DELIMITER=';';
+
+-- pergunta 5
+
+
+DROP KEYSPACE IF EXISTS bd2_receita;
+
+CREATE KEYSPACE bd2_receita 
+WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};
+
+USE bd2_receita;
+
+CREATE TABLE top_clientes_receita (
+    id_fixo text,
+    total_receita double,
+    customer_unique_id text,
+    PRIMARY KEY (id_fixo, total_receita, customer_unique_id)
+) WITH CLUSTERING ORDER BY (total_receita DESC);
+
+
+CREATE TABLE top_clientes_receita (     
+    id_fixo text,     
+    total_receita decimal,     
+    customer_unique_id text,     
+    PRIMARY KEY (id_fixo, total_receita, customer_unique_id) 
+) WITH CLUSTERING ORDER BY (total_receita DESC);
+
+USE bd2_receita;
+
+COPY top_clientes_receita(id_fixo, customer_unique_id, total_receita)
+FROM '/var/lib/cassandra/pergunta5.csv'
+WITH DELIMITER=';';
+
+
+
+-- pergunta 6
+DROP KEYSPACE IF EXISTS bd2ks;
+
+CREATE KEYSPACE bd2ks WITH REPLICATION = {'class': 'SimpleStrategy', 'replication_factor': 1};
+
+USE bd2ks;
+
+CREATE TABLE pares_frequentes_juntos (
+	id_fixo text,
+	frequencia int,
+    product_id_a text,
+    categoria_a text,
+    product_id_b text,
+    categoria_b text,
+    PRIMARY KEY (id_fixo, frequencia, product_id_a, product_id_b)
+) WITH CLUSTERING ORDER BY (frequencia DESC);
+
+USE bd2ks;
+COPY pares_frequentes_juntos(id_fixo, frequencia, product_id_a, categoria_a, product_id_b, categoria_b) 
+FROM '/var/lib/cassandra/pergunta6.csv' 
+WITH DELIMITER=';';

@@ -1,0 +1,47 @@
+
+-- pergunta 1
+USE bd2ks;
+
+SELECT categoria, receita_total 
+FROM top_receita 
+WHERE id_fixo = 'Geral' 
+LIMIT 10;
+
+-- pergunta 2
+USE bd2ks;
+
+SELECT estado, id_produto, categoria, quantidade_vendida 
+FROM best_seller_estado 
+WHERE id_fixo = 'Geral'
+LIMIT 6;
+
+-- pergunta 3
+USE p3;
+
+SELECT *
+FROM fluxo_vendas
+WHERE ano='2016'
+LIMIT 10;
+
+-- pergunta 4
+USE bd2_vendas;
+
+SELECT *
+FROM bd2_vendas.sucesso_vendas;
+
+-- pergunta 5
+USE bd2_receita;
+
+SELECT customer_unique_id, total_receita
+FROM top_clientes_receita
+WHERE id_fixo = 'Geral'
+LIMIT 10;
+
+
+-- pergunta 6
+USE bd2ks;
+
+SELECT product_id_a, categoria_a, product_id_b, categoria_b, frequencia 
+FROM pares_frequentes_juntos 
+WHERE id_fixo = 'Geral' 
+LIMIT 10;
