@@ -28,7 +28,7 @@ Compile the source code:
 * 📄 **[`projeto.c`](./src/projeto.c):** Main source code containing both Client and Server logic, IPC mechanisms, and manual string manipulation functions.
 
 ---
-### 👥 Authors (Group 24)
+### 👥 Authors
 * Gabriela Sousa e Santos (a104359)
 * Mariana Silva Gomes (a110943)
 * Matilde Pires Cunha (a111787)
