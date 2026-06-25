@@ -25,7 +25,7 @@ Compile the source code:
 3. **Check Logs:** `cat servidor.log`
 
 ### 📂 Repository Structure
-* 📄 **[`projeto.c`](./projeto.c):** Main source code containing both Client and Server logic, IPC mechanisms, and manual string manipulation functions.
+* 📄 **[`projeto.c`](./src/projeto.c):** Main source code containing both Client and Server logic, IPC mechanisms, and manual string manipulation functions.
 
 ---
 ### 👥 Authors (Group 24)
