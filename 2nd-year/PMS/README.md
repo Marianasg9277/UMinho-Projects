@@ -27,14 +27,14 @@ The system's architecture was structured around four main functional blocks:
 * **Canva:** Used to design the UI for the Proof of Concept (PoC), simulating both the Driver's Terminal and the Central Control dashboard.
 
 ### 📂 Repository Structure & Deliverables
-The project was divided into iterations following the OpenUP methodology. The resulting artifacts are documented in the following PDF files:
+The project was divided into milestones following the OpenUP methodology. The resulting artifacts are documented in the following PDF files:
 
-* 📄 **[`projetoPMS2526PL2-4M01.pdf`](./projetoPMS2526PL2-4M01.pdf):** **Iteration 1 (M4.1)** - Project Defined Process, Risk List, Tools, Glossary.
-* 📄 **[`projetoPMS2526PL2-4M02.pdf`](./projetoPMS2526PL2-4M02.pdf):** **Iteration 2 (M4.2)** - Vision, System Wide Requirements Specification (FURPS+), Use Case Model, Use Case Specifications.
-* 📄 **[`projetoPMS2526PL2-4M4Final.pdf`](./projetoPMS2526PL2-4M4Final.pdf):** **Iteration 3 (M4 Final)** - Architecture Notebook, Test Cases, Proof of Concept (UI Prototypes).
+* 📄 **[`projetoPMS2526PL2-4M01.pdf`](./projetoPMS2526PL2-4M01.pdf):** **Milestone 1 (M1)** 
+* 📄 **[`projetoPMS2526PL2-4M02.pdf`](./projetoPMS2526PL2-4M02.pdf):** **Milestone 2 (M2)**
+* 📄 **[`projetoPMS2526PL2-4M4Final.pdf`](./projetoPMS2526PL2-4M4Final.pdf):** **Milestone 4 (M4 Final)**
 
 ---
-### 👥 Authors
+### 👥 Authors 
 * Ana Íris Machado Torres (a110489)
 * Gabriela Sousa e Santos (a104359)
 * Maria Nair da Cunha e Silva Lacerda Ângelo (a111488)
