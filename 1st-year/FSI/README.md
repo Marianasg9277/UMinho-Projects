@@ -19,6 +19,6 @@ A comprehensive study and detailed modeling of the information system and busine
 
 ---
 ### 👥 Authors
-* Ana Íris Machado Torres (a110489)
-* Filipa Rafaela Mendes da Costa (a110179)
-* Mariana Silva Gomes (a110943)
+* Ana Íris Machado Torres (110489)
+* Filipa Rafaela Mendes da Costa (110179)
+* Mariana Silva Gomes (110943)
