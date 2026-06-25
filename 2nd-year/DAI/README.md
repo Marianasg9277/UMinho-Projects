@@ -1,9 +1,9 @@
 # Urban Management Platform (PGU) - Braga Urban Transport 🚌
 
-Academic project developed for the **Desenvolvimento de Aplicações Informáticas (DAI)** (Software Application Development) course at the University of Minho. Evaluated with a final grade of excellence.
+Academic project developed for the **Desenvolvimento de Aplicações Informáticas (DAI)** (Software Application Development) course at the University of Minho (2025/2026).
 
 ### 🔗 Live Demo
-**👉 [Access the Live PGU Application Here](INSERT_YOUR_LINK_HERE)**
+**👉 [Access the Live PGU Application Here](https://pgu-projetodai-gqaefedrdje5ggfw.francecentral-01.azurewebsites.net/index.html)**
 
 ### 📋 Description
 The Urban Management Platform (PGU) is an integrated system designed to support smart cities and territories by promoting operational efficiency, sustainability, and data-driven decision-making. This project was developed as a technological response to modernize the **Transportes Urbanos de Braga (TUB)** (Braga's Urban Transport network), aiming to aggregate and monitor all operational and mobility systems in real-time.
