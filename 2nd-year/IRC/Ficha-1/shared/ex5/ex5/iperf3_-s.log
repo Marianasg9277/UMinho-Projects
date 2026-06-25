@@ -1,0 +1,23 @@
+-----------------------------------------------------------
+Server listening on 5201
+-----------------------------------------------------------
+Accepted connection from 10.3.1.20, port 43628
+[  5] local 10.4.1.20 port 5201 connected to 10.3.1.20 port 43632
+[ ID] Interval           Transfer     Bitrate
+[  5]   0.00-1.08   sec  2.12 MBytes  16.5 Mbits/sec                  
+[  5]   1.08-2.12   sec  2.12 MBytes  17.2 Mbits/sec                  
+[  5]   2.12-3.09   sec  2.00 MBytes  17.2 Mbits/sec                  
+[  5]   3.09-4.07   sec  2.00 MBytes  17.2 Mbits/sec                  
+[  5]   4.07-5.10   sec  2.12 MBytes  17.2 Mbits/sec                  
+[  5]   5.10-6.08   sec  2.00 MBytes  17.2 Mbits/sec                  
+[  5]   6.08-7.11   sec  2.12 MBytes  17.2 Mbits/sec                  
+[  5]   7.11-8.09   sec  2.00 MBytes  17.2 Mbits/sec                  
+[  5]   8.09-9.06   sec  2.00 MBytes  17.2 Mbits/sec                  
+[  5]   9.06-10.10  sec  2.12 MBytes  17.2 Mbits/sec                  
+[  5]  10.10-10.58  sec  1.00 MBytes  17.2 Mbits/sec                  
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[ ID] Interval           Transfer     Bitrate
+[  5]   0.00-10.58  sec  21.6 MBytes  17.1 Mbits/sec                  receiver
+-----------------------------------------------------------
+Server listening on 5201
+-----------------------------------------------------------
