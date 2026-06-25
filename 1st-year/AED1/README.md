@@ -17,7 +17,7 @@ A command-line interface (CLI) application built to manage a multi-story parking
 * **Data Structures:** Implementation of custom `structs` (`Lugar`, `Parque`, `Cliente`) to encapsulate and manage data efficiently in memory.
 
 ---
-### 👥 Authors (Group 8)
+### 👥 Authors
 * Gabriela Sousa e Santos (a104359)
 * Maria Nair da Cunha e Silva Lacerda Ângelo (a111488)
 * Mariana Silva Gomes (a110943)
