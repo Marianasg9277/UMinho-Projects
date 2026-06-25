@@ -1,0 +1,39 @@
+32;Miguel Soares;Afiador;20250208
+33;Andreia Guerra;Tesoura;20250325
+34;Paulo Henriques;Caneta;20250404
+35;Carla Batista;Envelope;20250513
+36;Sérgio Antunes;Borracha;20250629
+37;Tânia Figueiredo;Marcador;20250710
+38;Nuno Reis;Bloco de Notas;20250821
+39;Rita Cardoso;Caneta;20250905
+40;Fábio Pinto;Agrafador;20251018
+41;Joana Vieira;Tesoura;20251103
+42;Cláudia Neves;Lápis;20251227
+43;Vítor Duarte;Afiador;20250102
+44;Vanessa Ferreira;Agrafador;20250222
+45;Diogo Almeida;Caderno;20250311
+46;Ana Lopes;Bloco de notas;20250419
+47;Sofia Ribeiro;Transferidor;20250530
+48;Hugo Santos;Envelope;20250601
+49;Ricardo Monteiro;Lápis;20250723
+50;Camila Rocha;Caneta de gel;20250806
+51;Luís Costa;Caneta;20250917
+52;Susana Ramos;Separadores;20251009
+53;Marco Azevedo;Caderno;20251125
+54;Helena Morais;Borracha;20251213
+55;Tiago Silva;Fita cola;20250129
+56;Marta Martins;Transferidor;20250214
+57;João Correia;Marcador;20250305
+58;Mariana Cruz;Cartolina;20250430
+59;Rafael Teixeira;Papel A4;20250509
+60;Inês Faria;Borracha;20250616
+61;Miguel Rocha;Cartolina;20250705
+62;Bruno Tavares;Agrafador;20250828
+63;Joana Cardoso;Separadores;20250912
+64;Paula Leal;Afiador;20251001
+65;Renato Pinto;Caneta de gel;20251119
+66;Carla Barros;Bloco de notas;20251202
+67;Cláudio Neves;Marcador;20250108
+68;Filipe Henriques;Fita cola;20250320
+69;Beatriz Duarte;Lápis;20250611
+70;Fábio Vieira;Tesoura;20250813

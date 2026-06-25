@@ -1,0 +1,30 @@
+3;Jorge Carvalho;Pincéis;20250830
+4;Miguel Augusto;Canetas BIC;20250425
+5;Josefina Sousa;Chisato;20250223
+6;Carlos Gonçalves;Borrachas ROTLIN;20250626
+7;Dulce Mendes;Réguas;20250330
+8;Guilherme Garcia;Afia;20250421
+9;Francisco Barreiros;Lápis de Cor;20250927
+10;Paula Vieira;Caderno de Linhas;20250303
+11;Maria Sousa;Caneta Vermelha;20250705
+12;Jorge Alberto;Papel de Impressora;20250603
+13;João Almeida;cartolina Vermelha;20250302
+14;Ana Costa;Esquadro;20250504
+15;Pedro Martins;Caneta Preta;20250806
+16;Sofia Oliveira;Cola UHU;20251123
+17;Miguel Silva;Caneta Vermelha;20251205
+18;Mariana Lopes;Giz;20250329
+19;João Ribeiro;Marcadores;20250627
+20;Beatriz Carvalho;Caneta e Quadro;20250101
+21;Tiago Santos;Lápis de Cor;20250716
+22;Ana Teixeira;Papel A3;20250626
+23;Catarina Nunes;Minas 0.5;20250205
+24;Ricardo Pires;Aguarelas;20250704
+25;Sofia Rocha;Tintas;20250523
+26;Bruno Correia;Cola Branca;20250506
+27;Inês Monteiro;Clips;20250913
+28;Rafael Matos;Tesoura;20251010
+29;Daniela Mota;Papel A5;20250713
+30;Hugo Cruz;PostIt;20250809
+31;Laura Fonseca;Lápis;20250117
+71;Miguel Pereira;Papel;20250517
