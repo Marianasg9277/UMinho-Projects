@@ -17,14 +17,6 @@ A command-line interface (CLI) application built to manage a parcel delivery sys
 * **Dynamic Data Structures:** Implements Linked Lists (pending parcels), Queues/FIFO (parcels waiting for dispatch), and Stacks/LIFO (history of dispatched parcels).
 * **Custom Structs:** Uses `Encomenda`, `EncomendaPendente`, `EncomendaExpedida`, and `Historico` to encapsulate and manage data efficiently in memory.
 
-### 📂 Repository Structure
-* 📁 **`src/`:** Main folder containing the project's source code and text databases.
-  * 📄 **`main.c`:** Core logic for the delivery workflow, including the implementation of the dynamic data structures and CLI menus.
-  * 📄 **`EncomendasPendentes.txt`:** Automatically saves the current state of all pending parcels.
-  * 📄 **`EncomendasExpedidas.txt`:** Saves the state of parcels that have been moved to the dispatch queue.
-  * 📄 **`Historico.txt`:** Persistent log containing the history of all successfully delivered orders.
-* 📄 **`Algoritmos_e_Estruturas_de_Dados...`:** Detailed project assignment and documentation. *(Nota: verifica e ajusta aqui o nome completo do ficheiro que está cortado na imagem)*
-
 ---
 ### 👥 Authors
 * Ana Íris Machado Torres (a110489)
