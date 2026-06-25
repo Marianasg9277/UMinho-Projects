@@ -1,0 +1,2 @@
+6: eth0@if7: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP mode DEFAULT group default qlen 1000
+    link/ether 00:00:00:aa:00:00 brd ff:ff:ff:ff:ff:ff link-netnsid 0
