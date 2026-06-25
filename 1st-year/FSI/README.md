@@ -8,7 +8,7 @@ This project was developed in progressive stages, covering the semantic and semi
 ### 📂 Stages
 * **FSI_Análise Semântica**: Semantic analysis phase.
 * **FSI_Análise Semiótica**: Semiotic analysis phase.
-* **FSI_Organigrama**: Organizational structure modeling.
+* **FSI_Organizagrama**: Organizational structure modeling.
 * **FSI_Representação de Sistemas de Informação**: Final representation of the system.
 
 ---
