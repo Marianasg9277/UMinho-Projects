@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>TUB – Ver Linhas</title>
+    <meta name="description" content="Consulte todas as linhas de autocarro TUB, horários e percursos.">
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#0f8bb5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="TUB">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="subpage.css">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+    <style>
+        /* ── Detalhe Drawer ───────────────────────────────────────────────── */
+        #detalhe-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            z-index: 800;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.28s ease;
+        }
+        #detalhe-overlay.dl-visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+        #detalhe-drawer {
+            background: rgba(255,255,255,0.96);
+            backdrop-filter: blur(30px) saturate(180%);
+            -webkit-backdrop-filter: blur(30px) saturate(180%);
+            border-radius: 26px 26px 0 0;
+            width: 100%;
+            max-width: 480px;
+            max-height: 82vh;
+            overflow-y: auto;
+            padding: 0 0 calc(24px + env(safe-area-inset-bottom, 0px));
+            transform: translateY(100%);
+            transition: transform 0.32s cubic-bezier(0.34, 1.2, 0.64, 1);
+            box-shadow: 0 -8px 40px rgba(0,0,0,0.18);
+        }
+        #detalhe-overlay.dl-visible #detalhe-drawer {
+            transform: translateY(0);
+        }
+        /* drag handle */
+        .dl-handle {
+            width: 40px; height: 4px;
+            background: rgba(0,0,0,0.13);
+            border-radius: 4px;
+            margin: 14px auto 0;
+        }
+        /* header strip */
+        .dl-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 18px 20px 14px;
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+        }
+        .dl-badge {
+            width: 48px; height: 48px;
+            border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.15rem; font-weight: 800;
+            color: #fff;
+            flex-shrink: 0;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+        }
+        .dl-title-wrap { flex: 1; min-width: 0; }
+        .dl-nome {
+            font-size: 0.95rem; font-weight: 700;
+            color: #1a1a2e;
+            overflow-wrap: break-word;
+        }
+        .dl-rota {
+            font-size: 0.78rem; color: #6b7280;
+            margin-top: 2px;
+            overflow-wrap: break-word;
+        }
+        .dl-close {
+            width: 34px; height: 34px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.06);
+            border: none;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            color: #6b7280;
+            flex-shrink: 0;
+            transition: background 0.2s;
+            padding: 0;
+        }
+        .dl-close:hover { background: rgba(0,0,0,0.12); }
+        /* meta chips */
+        .dl-meta {
+            display: flex; gap: 10px;
+            padding: 14px 20px;
+            flex-wrap: wrap;
+        }
+        .dl-chip {
+            display: flex; align-items: center; gap: 5px;
+            background: rgba(0,119,182,0.08);
+            color: #0077b6;
+            font-size: 0.78rem; font-weight: 600;
+            padding: 6px 12px;
+            border-radius: 20px;
+        }
+        .dl-sentido-toggle {
+            display: flex;
+            gap: 8px;
+            padding: 0 20px 14px;
+        }
+        .dl-sentido-btn {
+            flex: 1;
+            border: 1px solid rgba(0,119,182,0.16);
+            background: rgba(0,119,182,0.06);
+            color: #0077b6;
+            border-radius: 14px;
+            padding: 9px 12px;
+            font-size: 0.78rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+        }
+        .dl-sentido-btn:hover { transform: translateY(-1px); }
+        .dl-sentido-btn.active {
+            background: #0077b6;
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(0,119,182,0.22);
+        }
+        /* percurso list */
+        .dl-section-label {
+            font-size: 0.72rem; font-weight: 700;
+            letter-spacing: 0.08em; text-transform: uppercase;
+            color: #9ca3af;
+            padding: 0 20px 8px;
+        }
+        .dl-stop-list {
+            display: flex; flex-direction: column;
+            padding: 0 20px;
+            position: relative;
+        }
+        /* vertical line */
+        .dl-stop-list::before {
+            content: '';
+            position: absolute;
+            left: 34px; top: 10px; bottom: 10px;
+            width: 2px;
+            background: linear-gradient(180deg, var(--tub-blue) 0%, rgba(0,162,232,0.15) 100%);
+            border-radius: 2px;
+        }
+        .dl-stop {
+            display: flex; align-items: center;
+            gap: 14px;
+            padding: 10px 0;
+            position: relative;
+        }
+        .dl-stop-dot {
+            width: 14px; height: 14px;
+            border-radius: 50%;
+            background: #fff;
+            border: 2.5px solid var(--tub-blue);
+            flex-shrink: 0;
+            z-index: 1;
+        }
+        .dl-stop:first-child .dl-stop-dot,
+        .dl-stop:last-child .dl-stop-dot {
+            background: var(--tub-blue);
+        }
+        .dl-stop-info { flex: 1; min-width: 0; }
+        .dl-stop-nome {
+            font-size: 0.88rem; font-weight: 600;
+            color: #1a1a2e;
+            overflow-wrap: break-word;
+        }
+        .dl-stop:first-child .dl-stop-nome,
+        .dl-stop:last-child .dl-stop-nome {
+            color: var(--tub-dark-blue);
+        }
+        .dl-stop-min {
+            font-size: 0.72rem; color: #9ca3af;
+            margin-top: 1px;
+        }
+        .dl-stop-time {
+            font-size: 0.8rem; font-weight: 700;
+            color: var(--tub-blue);
+            white-space: nowrap;
+            min-width: 42px;
+            text-align: right;
+        }
+        /* error / loading states */
+        .dl-msg {
+            padding: 20px;
+            text-align: center;
+            font-size: 0.88rem;
+            color: #6b7280;
+        }
+        .dl-msg--error { color: #ef4444; }
+        /* loading spinner */
+        .dl-spinner {
+            width: 28px; height: 28px;
+            border: 3px solid rgba(0,162,232,0.2);
+            border-top-color: var(--tub-blue);
+            border-radius: 50%;
+            animation: dl-spin 0.8s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes dl-spin { to { transform: rotate(360deg); } }
+
+        /* ── Mapa Leaflet ─────────────────────────────────────────────────── */
+        .dl-map-wrap {
+            margin: 0 20px 4px;
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+            border: 1px solid rgba(255,255,255,0.7);
+            position: relative;
+        }
+        #dl-mapa {
+            height: 360px;
+            width: 100%;
+            border-radius: 18px;
+            background: rgba(240,248,255,0.6);
+        }
+        /* Glass overlay on attribution to match theme */
+        .dl-map-wrap .leaflet-control-attribution {
+            background: rgba(255,255,255,0.75);
+            backdrop-filter: blur(6px);
+            font-size: 0.6rem;
+            border-radius: 6px 0 0 0;
+        }
+        /* Custom popup glass style */
+        .leaflet-popup-content-wrapper {
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.7);
+            border-radius: 14px;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.13);
+            font-family: 'Inter', sans-serif;
+        }
+        .leaflet-popup-tip {
+            background: rgba(255,255,255,0.92);
+        }
+        .leaflet-popup-content {
+            margin: 10px 14px;
+            font-size: 0.82rem;
+            color: #1a1a2e;
+            line-height: 1.4;
+        }
+        .lf-popup-ordem {
+            font-size: 0.68rem; font-weight: 700;
+            color: #0077b6; letter-spacing: 0.05em;
+            text-transform: uppercase; margin-bottom: 2px;
+        }
+        .lf-popup-nome { font-weight: 700; color: #1a1a2e; }
+        .lf-popup-min  { font-size: 0.75rem; color: #6b7280; margin-top: 2px; }
+        /* Zoom controls */
+        .leaflet-control-zoom a {
+            background: rgba(255,255,255,0.88);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0,0,0,0.08);
+            color: #1a1a2e;
+            border-radius: 8px !important;
+        }
+        .leaflet-control-zoom a:hover {
+            background: rgba(255,255,255,1);
+        }
+        .dl-map-fallback {
+            height: 80px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.82rem; color: #9ca3af;
+            margin: 0 20px 4px;
+            background: rgba(0,0,0,0.03);
+            border-radius: 14px;
+        }
+        /* ── Bus status note inside map ──────────────────────────────────── */
+        .dl-bus-note {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 800;
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(255,255,255,0.7);
+            border-radius: 14px;
+            padding: 8px 16px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #6b7280;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+            white-space: nowrap;
+            pointer-events: none;
+        }
+        .dl-bus-note.hidden { display: none; }
+        /* ── Bus popup rows ────────────────────────────────────────────── */
+        .bus-popup-header {
+            display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+        }
+        .bus-popup-badge {
+            background: linear-gradient(135deg, #0077b6, #005a8c);
+            color: #fff; font-size: 0.68rem; font-weight: 700;
+            padding: 3px 9px; border-radius: 8px;
+        }
+        .bus-popup-code { font-weight: 700; font-size: 0.85rem; color: #1a1a2e; }
+        .bus-popup-row {
+            display: flex; align-items: center; gap: 5px;
+            margin-top: 3px; font-size: 0.75rem; color: #6b7280;
+        }
+        .bus-popup-row strong { color: #374151; font-weight: 600; }
+
+        /* ── Estado badges ────────────────────────────────────────── */
+        .estado-badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 2px 8px; border-radius: 8px;
+            font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em;
+        }
+        .estado-ARMAZENADO  { background: #f3f4f6; color: #6b7280; }
+        .estado-EM_TRANSITO { background: #fff7ed; color: #c2410c; }
+        .estado-EM_SERVICO  { background: #f0fdf4; color: #16a34a; }
+        .estado-PONTUAL     { background: #dcfce7; color: #15803d; }
+        .estado-ATRASADO    { background: #fef2f2; color: #dc2626; }
+        .estado-ADIANTADO   { background: #eff6ff; color: #2563eb; }
+        .estado-AVARIADO    { background: #fef2f2; color: #dc2626; border:1px solid #fca5a5; }
+        .estado-MANUTENCAO  { background: #fffbeb; color: #92400e; border:1px solid #fcd34d; }
+
+        /* ── Ocupação bar ───────────────────────────────────────── */
+        .ocupacao-bar {
+            width: 100%; height: 5px; background: #e5e7eb;
+            border-radius: 4px; overflow: hidden;
+        }
+        .ocupacao-fill {
+            height: 100%; border-radius: 4px;
+            background: linear-gradient(90deg, #10b981, #0077b6);
+            transition: width 0.6s ease;
+        }
+        .ocupacao-fill.high { background: linear-gradient(90deg, #f59e0b, #ef4444); }
+    </style>
+</head>
+<body>
+    <div class="bg-shape shape1"></div>
+    <div class="bg-shape shape2"></div>
+
+    <header class="sp-header">
+        <a href="index.html" class="sp-back-btn" aria-label="Voltar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+        </a>
+        <h1 class="sp-page-title">Ver Linhas</h1>
+        <div class="sp-header-right"></div>
+    </header>
+
+    <main class="kf-main">
+
+        <!-- Search -->
+        <div class="sp-search-wrap">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="search" id="pesquisa-linha" class="sp-search-input" placeholder="Pesquisar linha ou destino..." aria-label="Pesquisar linha">
+        </div>
+
+        <!-- Lines list – populated dynamically -->
+        <section>
+            <h2 class="sp-section-title" style="margin-bottom: 12px;">Todas as linhas</h2>
+            <div class="sp-lines-list" id="lista-linhas">
+                <div style="padding:24px;text-align:center;color:#94a3b8;">A carregar linhas…</div>
+            </div>
+        </section>
+
+    </main>
+
+    <nav class="kf-bottom-nav" aria-label="Navegação principal">
+        <a href="index.html" class="kf-nav-item" id="nav-inicio">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            <span>Início</span>
+        </a>
+        <a href="carteira.html" class="kf-nav-item" id="nav-carteira">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="5" width="20" height="14" rx="2"/>
+                <path d="M16 12h4v4h-4a2 2 0 0 1 0-4z"/>
+            </svg>
+            <span>Carteira</span>
+        </a>
+        <a href="pagamentos.html" class="kf-nav-item" id="nav-pagamentos">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                <line x1="1" y1="10" x2="23" y2="10"></line>
+            </svg>
+            <span>Pagamentos</span>
+        </a>
+        <a href="perfil.html" class="kf-nav-item" id="nav-perfil">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span>Perfil</span>
+        </a>
+    </nav>
+
+    <!-- ── Detalhe de Linha – Bottom Drawer ──────────────────────────────── -->
+    <div id="detalhe-overlay" role="dialog" aria-modal="true" aria-label="Detalhe da linha">
+        <div id="detalhe-drawer">
+            <div class="dl-handle"></div>
+            <div id="detalhe-conteudo"><!-- preenchido dinamicamente --></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '';
+
+        // ── Drawer helpers ────────────────────────────────────────────────────
+
+        const overlay = document.getElementById('detalhe-overlay');
+
+        function abrirDrawer() {
+            overlay.classList.add('dl-visible');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function fecharDrawer() {
+            overlay.classList.remove('dl-visible');
+            document.body.style.overflow = '';
+            pararBusPolling();
+        }
+
+        // Fechar ao clicar fora do drawer
+        overlay.addEventListener('click', function (e) {
+            if (e.target === overlay) fecharDrawer();
+        });
+
+        // Fechar com Escape
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') fecharDrawer();
+        });
+
+        // ── Detalhe da linha ──────────────────────────────────────────────────
+
+        // Instância Leaflet activa — destruída antes de cada nova abertura
+        let _mapaLeaflet = null;
+        let _busMarkers = {};
+        let _busPollTimer = null;
+        let _linhaAtualId = null;
+        let _linhaBaseAtual = null;
+        let _sentidoAtual = 'IDA';
+        const BUS_POLL_MS = 3000;
+
+        function destruirMapa() {
+            pararBusPolling();
+            _busMarkers = {};
+            if (_mapaLeaflet) {
+                _mapaLeaflet.remove();
+                _mapaLeaflet = null;
+            }
+        }
+
+        function pararBusPolling() {
+            if (_busPollTimer) {
+                clearInterval(_busPollTimer);
+                _busPollTimer = null;
+            }
+        }
+
+        async function abrirDetalhe(linhaBase) {
+            _linhaAtualId = linhaBase.id;
+            _linhaBaseAtual = linhaBase;
+            _sentidoAtual = 'IDA';
+            abrirDrawer();
+            await carregarDetalheSentido('IDA');
+        }
+
+        async function carregarDetalheSentido(sentido) {
+            const conteudo = document.getElementById('detalhe-conteudo');
+            if (!_linhaBaseAtual || !conteudo) return;
+
+            const linhaBase = _linhaBaseAtual;
+            const cor = linhaBase.cor || '#0ea5e9';
+            _sentidoAtual = sentido || 'IDA';
+
+            destruirMapa();
+            conteudo.innerHTML = renderHeader(linhaBase, cor) + renderSentidoToggle(_sentidoAtual) + '<div class="dl-spinner"></div>';
+            reanexarListenersDetalhe();
+
+            try {
+                const [resDetalhe, resPontos] = await Promise.all([
+                    fetch(`${API_BASE}/api/linhas/${linhaBase.id}/detalhe?sentido=${encodeURIComponent(_sentidoAtual)}`),
+                    fetch(`${API_BASE}/api/mapa/rotas/${linhaBase.id}/${encodeURIComponent(_sentidoAtual)}`).catch(() => ({ ok: false }))
+                ]);
+                if (!resDetalhe.ok) throw new Error('HTTP ' + resDetalhe.status);
+                const detalhe = await resDetalhe.json();
+
+                let pontosRota = [];
+                if (resPontos.ok) {
+                    try { pontosRota = await resPontos.json(); } catch (e) { /* ignorar */ }
+                }
+                if (!Array.isArray(pontosRota)) pontosRota = [];
+
+                destruirMapa();
+                conteudo.innerHTML = renderDetalheCompleto(detalhe, cor, _sentidoAtual);
+                initMapa(detalhe.percurso || [], cor, pontosRota);
+
+                if (_mapaLeaflet) {
+                    const latLngsRota = pontosRota
+                        .filter(p => p.latitude != null && p.longitude != null && isFinite(p.latitude) && isFinite(p.longitude))
+                        .map(p => [p.latitude, p.longitude]);
+                    if (latLngsRota.length >= 2) {
+                        L.polyline(latLngsRota, {
+                            color: cor || '#0077b6',
+                            weight: 5,
+                            opacity: 0.78,
+                            lineJoin: 'round',
+                            lineCap: 'round'
+                        }).addTo(_mapaLeaflet);
+                        _mapaLeaflet.fitBounds(L.latLngBounds(latLngsRota), { padding: [28, 28], maxZoom: 15 });
+                        console.log('[ROTA] Rota importada carregada:', _sentidoAtual, pontosRota.length, 'pontos');
+                    } else {
+                        desenharPolylineParagens(detalhe.percurso || [], cor);
+                    }
+                }
+
+                iniciarBusPolling();
+            } catch (err) {
+                console.error('Erro ao carregar percurso:', err);
+                conteudo.innerHTML =
+                    renderHeader(linhaBase, cor) +
+                    renderSentidoToggle(_sentidoAtual) +
+                    renderMetaBasico(linhaBase) +
+                    '<p class="dl-msg dl-msg--error">Não foi possível carregar o percurso desta linha.</p>';
+            }
+
+            reanexarListenersDetalhe();
+        }
+
+        function reanexarListenersDetalhe() {
+            const conteudo = document.getElementById('detalhe-conteudo');
+            if (!conteudo) return;
+            const btnFechar = conteudo.querySelector('.dl-close');
+            if (btnFechar) btnFechar.addEventListener('click', fecharDrawer);
+            conteudo.querySelectorAll('.dl-sentido-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const sentido = btn.dataset.sentido || 'IDA';
+                    if (sentido !== _sentidoAtual) carregarDetalheSentido(sentido);
+                });
+            });
+        }
+
+        function renderMapaBlock() {
+            return `<div class="dl-section-label" style="padding-top:4px;">Mapa</div>
+                <div class="dl-map-wrap">
+                    <div id="dl-mapa"></div>
+                    <div class="dl-bus-note hidden" id="dl-bus-note">Sem autocarro ativo neste momento</div>
+                </div>`;
+        }
+
+        function initMapaVazio() {
+            const mapEl = document.getElementById('dl-mapa');
+            if (!mapEl || typeof window.L === 'undefined') return;
+            _mapaLeaflet = L.map('dl-mapa', {
+                zoomControl: true,
+                scrollWheelZoom: false,
+                attributionControl: true
+            });
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+                maxZoom: 19
+            }).addTo(_mapaLeaflet);
+            _mapaLeaflet.setView([41.55, -8.44], 12);
+        }
+
+        function renderHeader(l, cor) {
+            return `
+                <div class="dl-header">
+                    <div class="dl-badge" style="background:${cor};box-shadow:0 4px 14px ${cor}55;">
+                        ${escHtml(l.numero)}
+                    </div>
+                    <div class="dl-title-wrap">
+                        <p class="dl-nome">${escHtml(l.nome)}</p>
+                        <p class="dl-rota">${escHtml(l.origem)} &rarr; ${escHtml(l.destino)}</p>
+                    </div>
+                    <button class="dl-close" aria-label="Fechar detalhe">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2.5"
+                             stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>`;
+        }
+
+        function renderMetaBasico(l) {
+            return `
+                <div class="dl-meta">
+                    <span class="dl-chip">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        ~${l.duracaoMin} min
+                    </span>
+                    <span class="dl-chip">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
+                        ${l.numParagens} paragens
+                    </span>
+                </div>`;
+        }
+
+        function renderSentidoToggle(sentidoAtual) {
+            const ativo = sentidoAtual || 'IDA';
+            return `
+                <div class="dl-sentido-toggle" role="group" aria-label="Escolher sentido">
+                    <button type="button" class="dl-sentido-btn ${ativo === 'IDA' ? 'active' : ''}" data-sentido="IDA">IDA</button>
+                    <button type="button" class="dl-sentido-btn ${ativo === 'VOLTA' ? 'active' : ''}" data-sentido="VOLTA">VOLTA</button>
+                </div>`;
+        }
+
+        function renderDetalheCompleto(d, cor, sentidoAtual) {
+            const percurso = d.percurso || [];
+
+            // Bloco do mapa (sempre injectado; initMapa decide se renderiza ou mostra fallback)
+            const mapaHtml = `
+                <div class="dl-section-label" style="padding-top:4px;">Mapa</div>
+                <div class="dl-map-wrap">
+                    <div id="dl-mapa"></div>
+                    <div class="dl-bus-note hidden" id="dl-bus-note">Sem autocarro ativo neste momento</div>
+                </div>`;
+
+            let stopsHtml = '';
+            if (percurso.length === 0) {
+                stopsHtml = '<p class="dl-msg">Sem paragens registadas para esta linha.</p>';
+            } else {
+                stopsHtml = `
+                    <div class="dl-section-label" style="padding-top:12px;">Percurso</div>
+                    <div class="dl-stop-list">
+                        ${percurso.map(p => `
+                            <div class="dl-stop">
+                                <div class="dl-stop-dot"></div>
+                                <div class="dl-stop-info">
+                                    <p class="dl-stop-nome">${escHtml(p.nome)}</p>
+                                </div>
+                                <span class="dl-stop-time">${p.minutosDesdeInicio === 0 ? 'início' : '+' + p.minutosDesdeInicio + ' min'}</span>
+                            </div>`).join('')}
+                    </div>`;
+            }
+
+            return renderHeader(d, cor) + renderMetaBasico(d) + renderSentidoToggle(sentidoAtual || _sentidoAtual) + mapaHtml + stopsHtml;
+        }
+
+        // ── Leaflet map ───────────────────────────────────────────────────────
+
+        function initMapa(percurso, cor, pontosRota) {
+            const mapEl = document.getElementById('dl-mapa');
+            if (!mapEl) return;
+
+            // Proteção defensiva: se Leaflet não carregou, mostrar fallback sem rebentar
+            if (typeof window.L === 'undefined') {
+                const wrap = mapEl.closest('.dl-map-wrap');
+                if (wrap) wrap.outerHTML = '<div class="dl-map-fallback">Mapa indisponível (sem ligação ao servidor de mapas).</div>';
+                return;
+            }
+
+            // Filtrar pontos com coordenadas válidas
+            const pontos = percurso.filter(p =>
+                p.latitude != null && p.longitude != null &&
+                isFinite(p.latitude) && isFinite(p.longitude)
+            );
+
+            // Verificar se existe rota importada com pontos suficientes para mostrar o mapa
+            const rotaTemPontos = Array.isArray(pontosRota) && pontosRota.filter(p =>
+                p.latitude != null && p.longitude != null && isFinite(p.latitude) && isFinite(p.longitude)
+            ).length >= 2;
+
+            if (pontos.length === 0 && !rotaTemPontos) {
+                // Sem paragens com coordenadas nem rota importada — mostrar fallback
+                const wrap = mapEl.closest('.dl-map-wrap');
+                if (wrap) {
+                    wrap.outerHTML = '<div class="dl-map-fallback">Sem coordenadas disponíveis para esta linha.</div>';
+                }
+                return;
+            }
+
+            const latLngs = pontos.map(p => [p.latitude, p.longitude]);
+
+            _mapaLeaflet = L.map('dl-mapa', {
+                zoomControl: true,
+                scrollWheelZoom: false,   // evitar scroll acidental no drawer
+                attributionControl: true
+            });
+
+            // Tile layer discreto (OpenStreetMap)
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+                maxZoom: 19
+            }).addTo(_mapaLeaflet);
+
+            // A linha contínua da rota é desenhada a partir de shapes.txt.
+            // Aqui mantemos apenas os marcadores das paragens. Se a rota GTFS
+            // não existir, desenharPolylineParagens faz fallback paragem-a-paragem.
+
+            // Icone personalizado (círculo SVG com cor da linha)
+            function criarIcone(isTerminal) {
+                const size = isTerminal ? 14 : 10;
+                const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
+                    <circle cx="${size/2}" cy="${size/2}" r="${size/2 - 1}"
+                        fill="${isTerminal ? cor : '#fff'}"
+                        stroke="${cor}" stroke-width="${isTerminal ? 0 : 2}"/>
+                </svg>`;
+                return L.divIcon({
+                    html: svg,
+                    className: '',
+                    iconSize: [size, size],
+                    iconAnchor: [size/2, size/2],
+                    popupAnchor: [0, -size/2 - 2]
+                });
+            }
+
+            // Markers + popups
+            pontos.forEach((p, idx) => {
+                const isTerminal = idx === 0 || idx === pontos.length - 1;
+                const minLabel = p.minutosDesdeInicio === 0 ? 'partida' : '+' + p.minutosDesdeInicio + ' min';
+                const popup = `
+                    <div class="lf-popup-ordem">Paragem ${p.ordem}</div>
+                    <div class="lf-popup-nome">${escHtml(p.nome)}</div>
+                    <div class="lf-popup-min">${minLabel}</div>`;
+                L.marker([p.latitude, p.longitude], { icon: criarIcone(isTerminal) })
+                    .bindPopup(popup, { maxWidth: 200, minWidth: 140 })
+                    .addTo(_mapaLeaflet);
+            });
+
+            // Ajustar bounds ao percurso das paragens (se houver)
+            if (pontos.length === 1) {
+                _mapaLeaflet.setView(latLngs[0], 15);
+            } else if (pontos.length > 1) {
+                _mapaLeaflet.fitBounds(latLngs, { padding: [28, 28], maxZoom: 16 });
+            } else {
+                // Sem paragens com coords — inicializar com vista por defeito;
+                // a rota importada chamará fitBounds depois
+                _mapaLeaflet.setView([41.55, -8.44], 12);
+            }
+        }
+
+        // ── Rota GTFS importada de shapes.txt ─────────────────────────────────
+
+        async function carregarRotaImportadaNoDrawer(cor, sentido) {
+            if (!_mapaLeaflet) return false;
+            try {
+                const sentidoEfetivo = sentido || _sentidoAtual || 'IDA';
+                const res = await fetch(`${API_BASE}/api/mapa/rotas/${_linhaAtualId}/${encodeURIComponent(sentidoEfetivo)}`);
+                if (!res.ok) return false;
+                const pontos = await res.json();
+                if (!Array.isArray(pontos) || pontos.length < 2) return false;
+
+                const latLngs = pontos
+                    .filter(p => p.latitude != null && p.longitude != null && isFinite(p.latitude) && isFinite(p.longitude))
+                    .map(p => [p.latitude, p.longitude]);
+                if (latLngs.length < 2) return false;
+
+                L.polyline(latLngs, {
+                    color: cor || '#0077b6',
+                    weight: 5,
+                    opacity: 0.78,
+                    lineJoin: 'round',
+                    lineCap: 'round'
+                }).addTo(_mapaLeaflet);
+
+                _mapaLeaflet.fitBounds(L.latLngBounds(latLngs), { padding: [28, 28], maxZoom: 15 });
+                console.log('[ROTA] Rota GTFS carregada no drawer:', sentidoEfetivo, pontos.length, 'pontos');
+                return true;
+            } catch (err) {
+                console.warn('[ROTA] Rota GTFS indisponivel:', err.message);
+                return false;
+            }
+        }
+
+        function desenharPolylineParagens(percurso, cor) {
+            if (!_mapaLeaflet) return;
+            const latLngs = (percurso || [])
+                .filter(p => p.latitude != null && p.longitude != null && isFinite(p.latitude) && isFinite(p.longitude))
+                .map(p => [p.latitude, p.longitude]);
+            if (latLngs.length < 2) return;
+            L.polyline(latLngs, {
+                color: cor || '#0077b6',
+                weight: 4,
+                opacity: 0.55,
+                lineJoin: 'round',
+                lineCap: 'round',
+                dashArray: '6 8'
+            }).addTo(_mapaLeaflet);
+            _mapaLeaflet.fitBounds(L.latLngBounds(latLngs), { padding: [28, 28], maxZoom: 16 });
+            console.log('[ROTA] Fallback paragem-a-paragem usado:', latLngs.length, 'pontos');
+        }
+
+        // ── Autocarros em tempo real ──────────────────────────────────────────
+
+        function criarTubBusIcon(direcao) {
+            const rot = (direcao != null && isFinite(direcao)) ? direcao : 0;
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+                <defs><filter id="tbs" x="-20%" y="-20%" width="140%" height="140%">
+                    <feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-opacity="0.22"/>
+                </filter></defs>
+                <g filter="url(#tbs)">
+                    <rect x="4" y="5" width="32" height="24" rx="7" fill="#0077b6"/>
+                    <rect x="4" y="5" width="32" height="24" rx="7" stroke="#fff" stroke-width="1.8" fill="none"/>
+                    <rect x="7" y="9" width="10" height="7" rx="2" fill="rgba(255,255,255,0.22)"/>
+                    <rect x="23" y="9" width="10" height="7" rx="2" fill="rgba(255,255,255,0.22)"/>
+                    <text x="20" y="26" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" font-weight="800" fill="#fff" letter-spacing="0.4">TUB</text>
+                    <circle cx="11" cy="32" r="2.5" fill="#334155" stroke="#fff" stroke-width="1.2"/>
+                    <circle cx="29" cy="32" r="2.5" fill="#334155" stroke="#fff" stroke-width="1.2"/>
+                </g>
+            </svg>`;
+            return L.divIcon({
+                html: `<div style="transform:rotate(${rot}deg);display:inline-block;">${svg}</div>`,
+                className: '',
+                iconSize: [40, 40],
+                iconAnchor: [20, 20],
+                popupAnchor: [0, -22]
+            });
+        }
+
+        // ── Estado labels helper ────────────────────────────────────────────
+        const ESTADO_LABELS_MAP = {
+            'ARMAZENADO': 'Armazenado', 'EM_TRANSITO': 'Em Trânsito',
+            'EM_SERVICO':  'Em Serviço', 'AVARIADO': 'Avariado',
+            'MANUTENCAO':  'Manutenção', 'PONTUAL': 'Pontual',
+            'ATRASADO':    'Atrasado',  'ADIANTADO': 'Adiantado'
+        };
+        function estadoLabel(e) { return ESTADO_LABELS_MAP[e] || e; }
+
+        function buildBusPopup(bus) {
+            const vel = bus.velocidade != null ? `${bus.velocidade} km/h` : '—';
+            const dir = bus.direcao    != null ? `${bus.direcao}°`       : '—';
+            const ts = bus.timestampReportado
+                ? new Date(bus.timestampReportado).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                : '—';
+            const recebido = bus.recebidoEm
+                ? new Date(bus.recebidoEm).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                : '—';
+            const pct    = bus.percentagemOcupacao ?? 0;
+            const isHigh = pct >= 80;
+            const estadoBadgeHtml = bus.estado
+                ? `<span class="estado-badge estado-${bus.estado}">${estadoLabel(bus.estado)}</span>` : '';
+            const subBadgeHtml = bus.subEstado
+                ? `<span class="estado-badge estado-${bus.subEstado}" style="margin-left:4px;">${bus.subEstado}</span>` : '';
+
+            return `
+                <div class="bus-popup-header">
+                    <span class="bus-popup-badge">${escHtml(bus.linhaNome || 'Linha')}</span>
+                    <span class="bus-popup-code">${escHtml(bus.codigoAutocarro)}</span>
+                </div>
+                ${bus.nome ? `<div style="font-weight:600;margin-bottom:6px;font-size:0.82rem;">${escHtml(bus.nome)}</div>` : ''}
+                ${bus.estado ? `<div style="margin-bottom:8px;">${estadoBadgeHtml}${subBadgeHtml}</div>` : ''}
+                <div class="bus-popup-row">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;stroke:#9ca3af;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <span>Velocidade: <strong>${vel}</strong></span>
+                </div>
+                ${bus.ocupacao != null ? `
+                <div class="bus-popup-row">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;stroke:#9ca3af;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    <span>Ocupação: <strong>${bus.ocupacao}/${bus.capacidade} pax (${pct}%)</strong></span>
+                </div>
+                <div class="ocupacao-bar" style="margin:4px 0 6px;"><div class="ocupacao-fill${isHigh ? ' high' : ''}" style="width:${Math.min(pct,100)}%"></div></div>` : ''}
+                ${bus.proximaParagemNome ? `
+                <div class="bus-popup-row">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;stroke:#9ca3af;"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+                    <span>ETA: <strong>${bus.etaMinutos} min</strong> → ${escHtml(bus.proximaParagemNome)}</span>
+                </div>` : ''}
+                <div class="bus-popup-row">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;stroke:#9ca3af;"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                    <span>Reportado: <strong>${ts}</strong></span>
+                </div>
+                <div class="bus-popup-row" style="font-size:0.68rem;color:#9ca3af;margin-top:2px;">
+                    Recebido pelo servidor: ${recebido}
+                </div>`;
+        }
+
+        async function fetchBusPosicoes() {
+            if (!_mapaLeaflet) return;
+            try {
+                const res = await fetch(`${API_BASE}/api/autocarros/posicoes?linhaId=${_linhaAtualId}`);
+                if (!res.ok) return;
+                const posicoes = await res.json();
+
+                const note = document.getElementById('dl-bus-note');
+                if (note) {
+                    if (posicoes.length === 0) note.classList.remove('hidden');
+                    else note.classList.add('hidden');
+                }
+
+                const activeCodes = new Set();
+                posicoes.forEach(bus => {
+                    activeCodes.add(bus.codigoAutocarro);
+                    if (_busMarkers[bus.codigoAutocarro]) {
+                        const m = _busMarkers[bus.codigoAutocarro];
+                        m.setLatLng([bus.latitude, bus.longitude]);
+                        m.setIcon(criarTubBusIcon(bus.direcao));
+                        m.setPopupContent(buildBusPopup(bus));
+                    } else {
+                        const m = L.marker([bus.latitude, bus.longitude], {
+                            icon: criarTubBusIcon(bus.direcao),
+                            zIndexOffset: 1000
+                        }).bindPopup(buildBusPopup(bus), {maxWidth:240,minWidth:180}).addTo(_mapaLeaflet);
+                        _busMarkers[bus.codigoAutocarro] = m;
+                    }
+                });
+                Object.keys(_busMarkers).forEach(code => {
+                    if (!activeCodes.has(code)) {
+                        _mapaLeaflet.removeLayer(_busMarkers[code]);
+                        delete _busMarkers[code];
+                    }
+                });
+            } catch (err) {
+                console.warn('[BUS] Erro polling:', err.message);
+            }
+        }
+
+        function iniciarBusPolling() {
+            pararBusPolling();
+            fetchBusPosicoes();
+            _busPollTimer = setInterval(fetchBusPosicoes, BUS_POLL_MS);
+        }
+
+        // Previne XSS nos dados do backend
+        function escHtml(str) {
+            if (str == null) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        // ── Lista de linhas ───────────────────────────────────────────────────
+
+        async function carregarLinhas() {
+            const lista = document.getElementById('lista-linhas');
+            try {
+                const res = await fetch(`${API_BASE}/api/linhas`);
+                const linhasRaw = await res.json();
+
+                const linhas = linhasRaw;
+
+                if (!linhas.length) {
+                    lista.innerHTML = '<div style="padding:24px;text-align:center;color:#94a3b8;">Sem linhas dispon\u00edveis.</div>';
+                    return;
+                }
+
+                lista.innerHTML = linhas.map((l, i) => `
+                    <div class="sp-line-row" id="linha-row-${i}" role="button" tabindex="0"
+                         aria-label="Ver percurso da linha ${escHtml(l.numero)}">
+                        <span class="sp-line-num kf-bus-line"
+                              style="background:${l.cor || '#0ea5e9'};box-shadow:0 4px 12px ${(l.cor || '#0ea5e9')}66">
+                            ${escHtml(l.numero)}
+                        </span>
+                        <div class="sp-line-detail">
+                            <p class="sp-line-name">${escHtml(l.origem)} &rarr; ${escHtml(l.destino)}</p>
+                            <p class="sp-line-meta">${l.numParagens} paragens &bull; ~${l.duracaoMin} min</p>
+                        </div>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                             stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                             style="flex-shrink:0;">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                    </div>
+                `).join('');
+
+                // Anexar evento de clique a cada card (guarda objeto da linha em closure)
+                linhas.forEach((l, i) => {
+                    const row = document.getElementById(`linha-row-${i}`);
+                    if (!row) return;
+                    const handler = () => abrirDetalhe(l);
+                    row.addEventListener('click', handler);
+                    // Acessibilidade: Enter e Space
+                    row.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handler(); }
+                    });
+                });
+
+                // Filtro de pesquisa
+                const pesquisa = document.getElementById('pesquisa-linha');
+                pesquisa.addEventListener('input', () => {
+                    const q = pesquisa.value.toLowerCase();
+                    document.querySelectorAll('.sp-line-row').forEach(row => {
+                        row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+                    });
+                });
+
+            } catch (e) {
+                console.error(e);
+                lista.innerHTML = '<div style="padding:24px;text-align:center;color:#ef4444;">Erro ao carregar linhas.</div>';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', carregarLinhas);
+    </script>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</body>
+</html>

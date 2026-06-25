@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>TUB – Comprar Passe</title>
+    <meta name="description" content="Compre o seu passe de transporte TUB com preço ajustado ao seu estatuto.">
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#0f8bb5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="TUB">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="subpage.css">
+    <style>
+        /* ── Estatuto badge ── */
+        .sp-estatuto-banner {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 18px;
+            background: rgba(255,255,255,0.72);
+            backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255,255,255,0.55);
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        .sp-estatuto-icon {
+            width: 44px; height: 44px;
+            border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .sp-estatuto-icon--sem   { background: rgba(156,163,175,0.15); color: #6b7280; }
+        .sp-estatuto-icon--ok    { background: rgba(52,199,89,0.15);   color: #1aa855; }
+        .sp-estatuto-icon--auto  { background: rgba(0,162,232,0.15);   color: #0077b6; }
+        .sp-estatuto-body { flex: 1; min-width: 0; }
+        .sp-estatuto-label {
+            font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.06em; color: #9ca3af; margin-bottom: 2px;
+        }
+        .sp-estatuto-value { font-size: 0.95rem; font-weight: 700; color: #1a1a2e; }
+        .sp-estatuto-hint  { font-size: 0.78rem; color: #6b7280; margin-top: 2px; }
+        .sp-estatuto-link {
+            font-size: 0.78rem; font-weight: 600; color: var(--tub-blue);
+            text-decoration: none; white-space: nowrap;
+        }
+        .sp-estatuto-link:hover { text-decoration: underline; }
+
+        /* ── Auth required banner ── */
+        .sp-auth-banner {
+            text-align: center;
+            padding: 28px 20px;
+            background: rgba(255,255,255,0.72);
+            backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255,255,255,0.55);
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        .sp-auth-banner p { font-size: 0.92rem; color: #374151; margin-bottom: 14px; line-height: 1.5; }
+        .sp-auth-btn {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 12px 28px;
+            background: linear-gradient(135deg, var(--tub-blue) 0%, var(--tub-dark-blue) 100%);
+            color: #fff; border: none; border-radius: 14px;
+            font-size: 0.92rem; font-weight: 700; cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            box-shadow: 0 4px 16px rgba(0,162,232,0.35);
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-decoration: none;
+        }
+        .sp-auth-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,162,232,0.45); }
+
+        /* ── Secondary button ── */
+        .sp-secondary-btn {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            width: 100%; padding: 14px;
+            background: rgba(255,255,255,0.5);
+            border: 2px solid rgba(0,162,232,0.2);
+            border-radius: 18px;
+            font-size: 0.92rem; font-weight: 600; color: var(--tub-dark-blue);
+            cursor: pointer; font-family: 'Inter', sans-serif;
+            transition: all 0.22s;
+        }
+        .sp-secondary-btn:hover {
+            background: rgba(0,162,232,0.08);
+            border-color: var(--tub-blue);
+            transform: translateY(-1px);
+        }
+
+        /* ── Feedback message ── */
+        .sp-feedback {
+            padding: 14px 16px; border-radius: 14px;
+            text-align: center; font-size: 0.88rem; font-weight: 600;
+        }
+        .sp-feedback--error   { background: rgba(239,68,68,0.1); color: #ef4444; }
+        .sp-feedback--success { background: rgba(52,199,89,0.1);  color: #1aa855; }
+
+        /* ── Coroa grid (3-col default, 2-col on narrow) ── */
+        .sp-coroa-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        @media (max-width: 360px) {
+            .sp-coroa-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        /* ── Active pass card ── */
+        .sp-passe-ativo {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            padding: 20px 18px;
+            background: rgba(255,255,255,0.82);
+            backdrop-filter: blur(20px) saturate(180%);
+            border: 1.5px solid rgba(0,162,232,0.25);
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        .sp-passe-ativo-icon {
+            width: 48px; height: 48px; flex-shrink: 0;
+            border-radius: 14px;
+            background: rgba(0,162,232,0.12);
+            color: #0077b6;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .sp-passe-ativo-body { flex: 1; min-width: 0; }
+        .sp-passe-ativo-title {
+            font-size: 0.98rem; font-weight: 700; color: #1a1a2e; margin-bottom: 6px;
+        }
+        .sp-passe-ativo-detail {
+            font-size: 0.82rem; color: #6b7280; line-height: 1.5;
+        }
+        .sp-passe-ativo-cta {
+            display: inline-flex; align-items: center; gap: 7px;
+            margin-top: 14px; padding: 11px 20px;
+            background: linear-gradient(135deg, var(--tub-blue), var(--tub-dark-blue));
+            color: #fff; border-radius: 13px; text-decoration: none;
+            font-size: 0.88rem; font-weight: 700;
+            box-shadow: 0 3px 12px rgba(0,162,232,0.28);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .sp-passe-ativo-cta:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,162,232,0.38); }
+        .sp-metodo-link {
+            display: block; text-align: center; margin-top: 10px;
+            font-size: 0.78rem; color: #9ca3af; text-decoration: none;
+        }
+        .sp-metodo-link:hover { color: var(--tub-blue); }
+        .sp-metodo-link span { color: var(--tub-blue); font-weight: 600; }
+
+        /* ── Aviso: sem fotografia de passe ── */
+        .sp-aviso-foto {
+            display: flex; align-items: center; gap: 12px;
+            padding: 14px 16px;
+            background: rgba(245,158,11,0.08);
+            border: 1px solid rgba(245,158,11,0.25);
+            border-radius: 16px;
+        }
+        .sp-aviso-foto-icon {
+            width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0;
+            background: rgba(245,158,11,0.14); color: #d97706;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .sp-aviso-foto-body { flex: 1; min-width: 0; }
+        .sp-aviso-foto-titulo {
+            font-size: 0.72rem; font-weight: 700; color: #92400e;
+            text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 3px;
+        }
+        .sp-aviso-foto-texto { font-size: 0.82rem; color: #78350f; line-height: 1.4; }
+        .sp-aviso-foto-link {
+            font-size: 0.78rem; font-weight: 700; color: #d97706;
+            text-decoration: none; white-space: nowrap; flex-shrink: 0;
+        }
+        .sp-aviso-foto-link:hover { text-decoration: underline; }
+
+        /* ── Card selector ── */
+        #cartao-selector { margin-top: 14px; }
+        .cartao-item {
+            display: flex; align-items: center; gap: 10px;
+            width: 100%; padding: 12px 14px;
+            background: rgba(255,255,255,0.5);
+            border: 1.5px solid rgba(0,0,0,0.08);
+            border-radius: 14px;
+            cursor: pointer; font-family: 'Inter', sans-serif;
+            font-size: 0.88rem; color: #374151; text-align: left;
+            transition: all 0.18s; margin-bottom: 8px;
+        }
+        .cartao-item:last-child { margin-bottom: 0; }
+        .cartao-item:hover { background: rgba(0,162,232,0.06); border-color: rgba(0,162,232,0.25); }
+        .cartao-item--selected {
+            background: rgba(0,162,232,0.10);
+            border-color: var(--tub-blue);
+            color: #1a1a2e;
+        }
+        .cartao-bandeira {
+            font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.06em; color: #6b7280;
+            background: rgba(0,0,0,0.06); padding: 2px 7px; border-radius: 6px;
+            flex-shrink: 0;
+        }
+        .cartao-numero  { font-weight: 600; flex: 1; }
+        .cartao-validade { font-size: 0.78rem; color: #9ca3af; flex-shrink: 0; }
+    </style>
+</head>
+<body>
+    <div class="bg-shape shape1"></div>
+    <div class="bg-shape shape2"></div>
+
+    <!-- Header -->
+    <header class="sp-header">
+        <a href="index.html" class="sp-back-btn" aria-label="Voltar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+        </a>
+        <h1 class="sp-page-title">Comprar Passe</h1>
+        <div class="sp-header-right"></div>
+    </header>
+
+    <main class="kf-main">
+
+        <!-- Auth required (shown when not logged in) -->
+        <div id="auth-required" class="sp-auth-banner" style="display:none;">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:8px;">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            <p>A compra de passes requer sessão iniciada.<br>Inicia sessão para continuar.</p>
+            <a href="index.html" class="sp-auth-btn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                Iniciar sessão
+            </a>
+        </div>
+
+        <!-- Main content (shown when logged in) -->
+        <div id="passe-content" style="display:none;">
+
+            <!-- Passe ativo card (hidden by default) -->
+            <div id="passe-bloqueado" class="sp-passe-ativo" style="display:none;">
+                <div class="sp-passe-ativo-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+                </div>
+                <div class="sp-passe-ativo-body">
+                    <div class="sp-passe-ativo-title" id="passe-bloqueado-titulo">Já tens um passe ativo</div>
+                    <div class="sp-passe-ativo-detail" id="passe-bloqueado-msg">Tens um passe válido associado à tua conta.</div>
+                    <div id="passe-bloqueado-cta">
+                        <a href="carteira.html" class="sp-passe-ativo-cta">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M16 12h4v4h-4a2 2 0 0 1 0-4z"/></svg>
+                            Ver na Carteira
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Renovation mode info card (shown only in ?renovarPasseId mode) -->
+            <div id="renovar-info-card" class="sp-passe-ativo" style="display:none;">
+                <div class="sp-passe-ativo-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 .49-3.51"></path></svg>
+                </div>
+                <div class="sp-passe-ativo-body">
+                    <div class="sp-passe-ativo-title">Renovar passe</div>
+                    <div class="sp-passe-ativo-detail" id="renovar-info-msg">A carregar informação do passe…</div>
+                </div>
+            </div>
+
+            <!-- 1. Estatuto -->
+            <section class="sp-estatuto-banner" id="estatuto-section">
+                <div class="sp-estatuto-icon sp-estatuto-icon--sem" id="estatuto-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                </div>
+                <div class="sp-estatuto-body">
+                    <div class="sp-estatuto-label">O teu estatuto</div>
+                    <div class="sp-estatuto-value" id="estatuto-valor">A carregar…</div>
+                    <div class="sp-estatuto-hint" id="estatuto-hint"></div>
+                </div>
+                <a href="pedir_estatuto.html" class="sp-estatuto-link" id="estatuto-link" style="display:none;">
+                    Pedir estatuto →
+                </a>
+            </section>
+
+            <!-- Aviso: sem fotografia de passe -->
+            <div id="aviso-foto-passe" style="display:none;">
+                <div class="sp-aviso-foto">
+                    <div class="sp-aviso-foto-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                            <circle cx="12" cy="13" r="4"></circle>
+                        </svg>
+                    </div>
+                    <div class="sp-aviso-foto-body">
+                        <div class="sp-aviso-foto-titulo">Fotografia em falta</div>
+                        <div class="sp-aviso-foto-texto">Adiciona uma fotografia ao teu perfil para que o teu passe digital fique completo.</div>
+                    </div>
+                    <a href="perfil.html" class="sp-aviso-foto-link">Adicionar&nbsp;→</a>
+                </div>
+            </div>
+
+            <!-- 2. Tipo de passe -->
+            <section class="sp-card">
+                <h2 class="sp-section-title">Tipo de passe</h2>
+                <div class="sp-ticket-grid" id="tipo-passe-grid" style="grid-template-columns: repeat(2, 1fr);">
+                    <!-- Populated by JS -->
+                </div>
+            </section>
+
+            <!-- 3. Coroa -->
+            <section class="sp-card">
+                <h2 class="sp-section-title">Zona / Coroa</h2>
+                <div class="sp-coroa-grid" id="coroa-grid">
+                    <!-- Populated by JS -->
+                </div>
+            </section>
+
+            <!-- 4. Resumo de preço -->
+            <section class="sp-price-card" id="price-section">
+                <div class="sp-price-row">
+                    <span id="preco-tipo">—</span>
+                    <strong id="preco-coroa">—</strong>
+                </div>
+                <div class="sp-price-row">
+                    <span>Estatuto aplicado</span>
+                    <strong id="preco-estatuto">—</strong>
+                </div>
+                <div class="sp-price-divider"></div>
+                <div class="sp-price-row sp-price-total">
+                    <span>Total</span>
+                    <strong id="preco-total">—</strong>
+                </div>
+            </section>
+
+            <div class="sp-card" id="metodo-passe-section">
+                <h2 class="sp-section-title">Método de pagamento</h2>
+                <button type="button" class="sp-ticket-type sp-ticket-active" id="metodo-passe-saldo" style="width:100%;">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="5" width="20" height="14" rx="2"/>
+                        <path d="M16 12h4v4h-4a2 2 0 0 1 0-4z"/>
+                    </svg>
+                    <span>Saldo TUB</span>
+                    <small id="saldo-passe-disponivel" style="font-size:0.7rem;font-weight:600;opacity:0.75;">—</small>
+                </button>
+                <p id="aviso-saldo-passe" style="display:none;font-size:0.82rem;color:#ef4444;margin-top:10px;text-align:center;">
+                    Saldo insuficiente. <a href="carregar_saldo.html" style="color:#ef4444;font-weight:700;">Carregar conta →</a>
+                </p>
+            </div>
+
+            <!-- Feedback -->
+            <div id="feedback-msg" style="display:none;"></div>
+
+            <!-- Renovation confirm button (shown only in ?renovarPasseId mode) -->
+            <button class="sp-cta-btn" id="btn-renovar-confirmar" style="display:none;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 .49-3.51"></path></svg>
+                <span id="btn-renovar-text">Confirmar renovação</span>
+            </button>
+
+            <!-- CTA -->
+            <button class="sp-cta-btn" id="btn-criar" disabled>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"></path>
+                    <line x1="9" y1="12" x2="15" y2="12"></line>
+                </svg>
+                <span id="btn-criar-text">Selecione tipo e zona</span>
+            </button>
+
+            <!-- Payment button (shown after pass creation) -->
+            <button class="sp-cta-btn" id="btn-pagar" style="display:none;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="5" width="20" height="14" rx="2"/>
+                    <path d="M16 12h4v4h-4a2 2 0 0 1 0-4z"/>
+                </svg>
+                <span>Pagar agora</span>
+            </button>
+
+            <!-- Link to wallet (shown after payment) -->
+            <a href="carteira.html" class="sp-secondary-btn" id="btn-meus-passes" style="display:none;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="5" width="20" height="14" rx="2"/>
+                    <path d="M16 12h4v4h-4a2 2 0 0 1 0-4z"/>
+                </svg>
+                Ver na Carteira
+            </a>
+        </div>
+
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="kf-bottom-nav" aria-label="Navegação principal">
+        <a href="index.html" class="kf-nav-item" id="nav-inicio">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            <span>Início</span>
+        </a>
+        <a href="carteira.html" class="kf-nav-item" id="nav-carteira">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="5" width="20" height="14" rx="2"/>
+                <path d="M16 12h4v4h-4a2 2 0 0 1 0-4z"/>
+            </svg>
+            <span>Carteira</span>
+        </a>
+        <a href="pagamentos.html" class="kf-nav-item" id="nav-pagamentos">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                <line x1="1" y1="10" x2="23" y2="10"></line>
+            </svg>
+            <span>Pagamentos</span>
+        </a>
+        <a href="perfil.html" class="kf-nav-item" id="nav-perfil">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span>Perfil</span>
+        </a>
+    </nav>
+
+    <script>
+        const API = '';
+
+        // ── State ──────────────────────────────────────────────────────────────
+        let estatutoAtual = 'SEM_ESTATUTO';
+        let tiposPasse    = [];
+        let coroas        = [];
+        let selectedTipo  = null;
+        let selectedCoroa = null;
+        let precoAtual    = null;
+        let passeAtual    = null;
+        let selectedMetodoPasse = 'SALDO_CONTA';
+        let saldoContaPasse     = null;
+        const renovarPasseId    = new URLSearchParams(window.location.search).get('renovarPasseId');
+
+        function formatPreco(v) {
+            return parseFloat(v).toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+        }
+
+        const ESTATUTO_LABELS = {
+            'SEM_ESTATUTO': 'Sem estatuto',
+            'ESTUDANTE':    'Estudante',
+            'RESIDENTE':    'Residente',
+            'SENIOR':       'Sénior',
+            'MILITAR':      'Militar',
+            'CRIANCA':      'Criança',
+            'INCAPACITADO': 'Incapacitado'
+        };
+
+        // ── Auth check ─────────────────────────────────────────────────────────
+        async function verificarSessao() {
+            try {
+                const res = await fetch(`${API}/api/me`, { credentials: 'include' });
+                if (res.ok) {
+                    document.getElementById('auth-required').style.display = 'none';
+                    return true;
+                }
+            } catch {}
+            window.location.href = 'index.html';
+            return false;
+        }
+
+        // ── Load statute ───────────────────────────────────────────────────────
+        async function carregarEstatuto() {
+            try {
+                const res = await fetch(`${API}/api/user/estatuto/atual`, { credentials: 'include' });
+                if (res.status === 401 || res.status === 403) { window.location.href = 'index.html'; return; }
+                if (!res.ok) return;
+                const data = await res.json();
+                estatutoAtual = data.tipoEstatuto || 'SEM_ESTATUTO';
+
+                const iconEl = document.getElementById('estatuto-icon');
+                const valorEl = document.getElementById('estatuto-valor');
+                const hintEl = document.getElementById('estatuto-hint');
+                const linkEl = document.getElementById('estatuto-link');
+
+                valorEl.textContent = ESTATUTO_LABELS[estatutoAtual] || estatutoAtual;
+
+                if (estatutoAtual === 'SEM_ESTATUTO') {
+                    iconEl.className = 'sp-estatuto-icon sp-estatuto-icon--sem';
+                    hintEl.textContent = 'Preço base aplicado. Pede um estatuto para descontos.';
+                    linkEl.style.display = '';
+                } else if (data.automatico) {
+                    iconEl.className = 'sp-estatuto-icon sp-estatuto-icon--auto';
+                    hintEl.textContent = 'Estatuto automático (por idade)';
+                    linkEl.style.display = 'none';
+                } else {
+                    iconEl.className = 'sp-estatuto-icon sp-estatuto-icon--ok';
+                    hintEl.textContent = 'Estatuto ativo — desconto aplicado';
+                    linkEl.style.display = 'none';
+                }
+            } catch (e) { console.error('Erro ao carregar estatuto:', e); }
+        }
+
+        // ── Blocking pass check ────────────────────────────────────────────────
+        const ESTADOS_BLOQUEANTES = ['ACTIVE', 'FALTA_RENOVAR'];
+
+        async function verificarPasseBloqueante() {
+            try {
+                const res = await fetch(`${API}/api/user/passes`, { credentials: 'include' });
+                if (!res.ok) return; // don't block on error
+                const passes = await res.json();
+
+                const bloqueante = passes.find(p =>
+                    ESTADOS_BLOQUEANTES.includes(p.estadoOperacional)
+                    || p.estadoComercial === 'PENDING_PAYMENT'
+                    || (p.estadoComercial === 'PAID' && p.estadoOperacional === 'INACTIVE')
+                );
+
+                if (!bloqueante) return;
+
+                const banner = document.getElementById('passe-bloqueado');
+                const msgEl  = document.getElementById('passe-bloqueado-msg');
+
+                let detalhe = '';
+                if (bloqueante.tipoPasseNome) detalhe += bloqueante.tipoPasseNome;
+                if (bloqueante.coroaNome)    detalhe += (detalhe ? ' · ' : '') + bloqueante.coroaNome;
+                if (bloqueante.dataFim)      detalhe += (detalhe ? ' · ' : '') + 'válido até ' + new Date(bloqueante.dataFim).toLocaleDateString('pt-PT');
+
+                if (bloqueante.estadoComercial === 'PENDING_PAYMENT') {
+                    msgEl.textContent = 'Tens um passe pendente de pagamento.' + (detalhe ? ' ' + detalhe + '.' : ' Paga-o na Carteira.');
+                } else {
+                    msgEl.textContent = (detalhe || 'Passe válido') + (bloqueante.estadoOperacional === 'FALTA_RENOVAR' ? ' — expirado.' : ' — ativo.');
+                }
+
+                if (bloqueante.estadoOperacional === 'FALTA_RENOVAR') {
+                    document.getElementById('passe-bloqueado-titulo').textContent = 'O teu passe expirou';
+                    document.getElementById('passe-bloqueado-cta').innerHTML =
+                        `<a href="comprar_passe.html?renovarPasseId=${bloqueante.id}" class="sp-passe-ativo-cta">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 .49-3.51"></path></svg>
+                            Renovar passe
+                        </a>`;
+                }
+
+                banner.style.display = '';
+
+                // Esconder completamente as secções de seleção (não apenas opacitar)
+                ['estatuto-section', 'tipo-passe-grid', 'coroa-grid', 'price-section', 'metodo-passe-section'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.closest('section, div.sp-card, .sp-estatuto-banner, .sp-coroa-grid, .sp-price-card') ?
+                        el.closest('section, div.sp-card, .sp-estatuto-banner, .sp-price-card').style.display = 'none' :
+                        el.style.display = 'none';
+                });
+                document.getElementById('btn-criar').style.display = 'none';
+                document.getElementById('metodo-passe-section').style.display = 'none';
+            } catch (e) {
+                console.error('Erro ao verificar passes existentes:', e);
+            }
+        }
+
+        // ── Load pass types ────────────────────────────────────────────────────
+        async function carregarTiposPasse() {
+            try {
+                const res = await fetch(`${API}/api/tipos-passe`);
+                tiposPasse = await res.json();
+                const grid = document.getElementById('tipo-passe-grid');
+
+                grid.innerHTML = tiposPasse.map((t, i) => `
+                    <button class="sp-ticket-type" data-id="${t.id}" data-nome="${t.nome}"
+                            data-dias="${t.duracaoDias}" type="button">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                            <line x1="1" y1="10" x2="23" y2="10"></line>
+                        </svg>
+                        <span>${t.nome}</span>
+                        <span style="font-size:0.7rem;font-weight:500;color:#9ca3af;">${t.duracaoDias} dias</span>
+                    </button>
+                `).join('');
+
+                grid.querySelectorAll('.sp-ticket-type').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        grid.querySelectorAll('.sp-ticket-type').forEach(b => b.classList.remove('sp-ticket-active'));
+                        btn.classList.add('sp-ticket-active');
+                        selectedTipo = tiposPasse.find(t => t.id == btn.dataset.id);
+                        atualizarPreco();
+                    });
+                });
+            } catch (e) { console.error('Erro ao carregar tipos:', e); }
+        }
+
+        // ── Load crowns ────────────────────────────────────────────────────────
+        async function carregarCoroas() {
+            try {
+                const res = await fetch(`${API}/api/coroas`);
+                coroas = await res.json();
+                const grid = document.getElementById('coroa-grid');
+
+                grid.innerHTML = coroas.map((c, i) => `
+                    <button class="sp-ticket-type" data-id="${c.id}" data-nome="${c.nome}" type="button">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <circle cx="12" cy="12" r="${10 - i * 3}"></circle>
+                        </svg>
+                        <span>${c.nome}</span>
+                    </button>
+                `).join('');
+
+                grid.querySelectorAll('.sp-ticket-type').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        grid.querySelectorAll('.sp-ticket-type').forEach(b => b.classList.remove('sp-ticket-active'));
+                        btn.classList.add('sp-ticket-active');
+                        selectedCoroa = coroas.find(c => c.id == btn.dataset.id);
+                        atualizarPreco();
+                    });
+                });
+            } catch (e) { console.error('Erro ao carregar coroas:', e); }
+        }
+
+        // ── Dynamic price ──────────────────────────────────────────────────────
+        async function atualizarPreco() {
+            const tipoEl = document.getElementById('preco-tipo');
+            const coroaEl = document.getElementById('preco-coroa');
+            const estEl = document.getElementById('preco-estatuto');
+            const totalEl = document.getElementById('preco-total');
+            const btn = document.getElementById('btn-criar');
+            const btnText = document.getElementById('btn-criar-text');
+
+            if (!selectedTipo || !selectedCoroa) {
+                tipoEl.textContent = selectedTipo ? selectedTipo.nome : '—';
+                coroaEl.textContent = selectedCoroa ? selectedCoroa.nome : '—';
+                estEl.textContent = ESTATUTO_LABELS[estatutoAtual] || '—';
+                totalEl.textContent = '—';
+                btn.disabled = true;
+                btnText.textContent = 'Selecione tipo e zona';
+                return;
+            }
+
+            tipoEl.textContent = selectedTipo.nome + ' (' + selectedTipo.duracaoDias + ' dias)';
+            coroaEl.textContent = selectedCoroa.nome;
+            estEl.textContent = ESTATUTO_LABELS[estatutoAtual] || estatutoAtual;
+
+            // Fetch dynamic price from options endpoint
+            try {
+                const res = await fetch(`${API}/api/user/passes/opcoes`, { credentials: 'include' });
+                if (res.status === 401 || res.status === 403) { window.location.href = 'index.html'; return; }
+                if (res.ok) {
+                    const opcoes = await res.json();
+                    const match = opcoes.find(o =>
+                        o.tipoPasseId == selectedTipo.id && o.coroaId == selectedCoroa.id
+                    );
+                    if (match) {
+                        precoAtual = match.preco;
+                        if (parseFloat(match.preco) === 0) {
+                            totalEl.textContent = 'Gratuito';
+                            document.getElementById('metodo-passe-section').style.display = 'none';
+                            btn.disabled = false;
+                            btnText.textContent = 'Ativar passe gratuito';
+                        } else {
+                            totalEl.textContent = formatPreco(match.preco);
+                            document.getElementById('metodo-passe-section').style.display = '';
+                            btn.disabled = false;
+                            btnText.textContent = 'Criar passe — ' + formatPreco(match.preco);
+                        }
+                        return;
+                    }
+                }
+            } catch (e) { console.error('Erro ao obter preço:', e); }
+
+            totalEl.textContent = '—';
+            btn.disabled = true;
+            btnText.textContent = 'Preço indisponível';
+            verificarAvisoSaldoPasse();
+        }
+
+        // ── Método de pagamento ────────────────────────────────────────────────
+
+        function selecionarMetodoPasse(metodo) {
+            selectedMetodoPasse = metodo;
+            document.getElementById('metodo-passe-saldo').classList.toggle('sp-ticket-active', metodo === 'SALDO_CONTA');
+            // Clear any previous payment feedback when switching method
+            const fb = document.getElementById('feedback-msg');
+            if (fb) fb.style.display = 'none';
+            verificarAvisoSaldoPasse();
+        }
+
+        function verificarAvisoSaldoPasse() {
+            const aviso = document.getElementById('aviso-saldo-passe');
+            // In renovation mode, no upfront warning — backend validates on confirm
+            if (renovarPasseId) { aviso.style.display = 'none'; return; }
+            if (selectedMetodoPasse !== 'SALDO_CONTA' || saldoContaPasse === null || precoAtual === null) {
+                aviso.style.display = 'none';
+                return;
+            }
+            aviso.style.display = saldoContaPasse < parseFloat(precoAtual) ? '' : 'none';
+        }
+
+        async function carregarSaldoPasse() {
+            try {
+                const res = await fetch(`${API}/api/user/conta`, { credentials: 'include' });
+                if (res.ok) {
+                    const data = await res.json();
+                    saldoContaPasse = parseFloat(data.saldo);
+                    document.getElementById('saldo-passe-disponivel').textContent =
+                        saldoContaPasse.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+                }
+            } catch (e) {
+                console.error('[PASSE] Erro ao carregar saldo:', e);
+            }
+        }
+
+        // ── Create pass ────────────────────────────────────────────────────────
+        document.getElementById('btn-criar').addEventListener('click', async () => {
+            if (!selectedTipo || !selectedCoroa) return;
+
+            const btn = document.getElementById('btn-criar');
+            const btnText = document.getElementById('btn-criar-text');
+            const feedback = document.getElementById('feedback-msg');
+
+            btn.disabled = true;
+            btnText.textContent = 'A criar…';
+            feedback.style.display = 'none';
+
+            try {
+                const res = await fetch(`${API}/api/user/passes`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        idCliente: parseInt(localStorage.getItem('idCliente'), 10) || null,
+                        tipoPasseId: selectedTipo.id,
+                        coroaId: selectedCoroa.id
+                    })
+                });
+                if (res.status === 401 || res.status === 403) { window.location.href = 'index.html'; return; }
+                const data = await res.json();
+
+                if (res.ok && data.id) {
+                    passeAtual = data;
+
+                    // Passe gratuito: backend ativou imediatamente — saltar passo de pagamento
+                    if (data.estadoOperacional === 'ACTIVE') {
+                        feedback.className = 'sp-feedback sp-feedback--success';
+                        feedback.textContent = 'Passe gratuito ativado com sucesso!';
+                        feedback.style.display = '';
+                        btn.style.display = 'none';
+                        const btnCarteira = document.getElementById('btn-meus-passes');
+                        btnCarteira.href = `carteira.html?novo=${passeAtual.id}`;
+                        btnCarteira.style.display = '';
+                        return;
+                    }
+
+                    feedback.className = 'sp-feedback sp-feedback--success';
+                    feedback.textContent = 'Passe criado com sucesso! Pagamento pendente.';
+                    feedback.style.display = '';
+
+                    btn.style.display = 'none';
+                    document.getElementById('btn-pagar').style.display = '';
+                } else {
+                    feedback.className = 'sp-feedback sp-feedback--error';
+                    feedback.textContent = data.message || 'Erro ao criar passe.';
+                    feedback.style.display = '';
+                    btn.disabled = false;
+                    btnText.textContent = 'Criar passe — ' + formatPreco(precoAtual);
+                }
+            } catch (e) {
+                console.error(e);
+                feedback.className = 'sp-feedback sp-feedback--error';
+                feedback.textContent = 'Erro ao comunicar com o servidor.';
+                feedback.style.display = '';
+                btn.disabled = false;
+                btnText.textContent = 'Criar passe — ' + formatPreco(precoAtual);
+            }
+        });
+
+        // ── Pay pass ───────────────────────────────────────────────────────────
+        document.getElementById('btn-pagar').addEventListener('click', async () => {
+            if (!passeAtual) return;
+
+            const btn = document.getElementById('btn-pagar');
+            const feedback = document.getElementById('feedback-msg');
+
+            btn.disabled = true;
+            btn.querySelector('span').textContent = 'A processar…';
+
+            try {
+                let pagarUrl = `${API}/api/user/passes/${passeAtual.id}/pagar?metodo=${encodeURIComponent(selectedMetodoPasse)}`;
+                const res = await fetch(pagarUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include'
+                });
+                if (res.status === 401 || res.status === 403) { window.location.href = 'index.html'; return; }
+                const data = await res.json();
+
+                if (res.ok) {
+                    passeAtual = data.passe || passeAtual;
+
+                    feedback.className = 'sp-feedback sp-feedback--success';
+                    feedback.textContent = data.message || 'Pagamento confirmado!';
+                    feedback.style.display = '';
+
+                    btn.style.display = 'none';
+                    const btnCarteira = document.getElementById('btn-meus-passes');
+                    // Pass the ID so carteira.html can highlight and scroll to this pass
+                    btnCarteira.href = `carteira.html?novo=${passeAtual.id}`;
+                    btnCarteira.style.display = '';
+                } else {
+                    feedback.className = 'sp-feedback sp-feedback--error';
+                    if (data.message && data.message.toLowerCase().includes('saldo insuficiente')) {
+                        feedback.innerHTML = 'Saldo insuficiente. <a href="carregar_saldo.html" style="color:inherit;font-weight:700;">Carregar conta →</a>';
+                    } else {
+                        feedback.textContent = data.message || 'Erro no pagamento.';
+                    }
+                    feedback.style.display = '';
+                    btn.disabled = false;
+                    btn.querySelector('span').textContent = 'Pagar agora';
+                }
+            } catch (e) {
+                console.error(e);
+                feedback.className = 'sp-feedback sp-feedback--error';
+                feedback.textContent = 'Erro ao comunicar com o servidor.';
+                feedback.style.display = '';
+                btn.disabled = false;
+                btn.querySelector('span').textContent = 'Pagar agora';
+            }
+        });
+
+        async function iniciarModoRenovar(passeId) {
+            const titleEl = document.querySelector('.sp-page-title');
+            if (titleEl) titleEl.textContent = 'Renovar passe';
+
+            // Show info card with pass details
+            const infoCard = document.getElementById('renovar-info-card');
+            const infoMsg  = document.getElementById('renovar-info-msg');
+            infoCard.style.display = '';
+
+            try {
+                const res = await fetch(`${API}/api/user/passes/${passeId}`, { credentials: 'include' });
+                if (res.status === 401 || res.status === 403) { window.location.href = 'index.html'; return; }
+                if (res.ok) {
+                    const p = await res.json();
+                    let detalhe = p.tipoPasseNome || '';
+                    if (p.coroaNome)      detalhe += (detalhe ? ' · ' : '') + p.coroaNome;
+                    if (p.dataFim)        detalhe += (detalhe ? ' · ' : '') + 'expirou em ' + new Date(p.dataFim).toLocaleDateString('pt-PT');
+                    if (p.precoAplicado != null) detalhe += (detalhe ? ' · ' : '') + formatPreco(p.precoAplicado);
+                    infoMsg.textContent = detalhe || 'Passe a renovar';
+                    if (p.precoAplicado != null) {
+                        precoAtual = p.precoAplicado;
+                        if (parseFloat(p.precoAplicado) === 0) {
+                            document.getElementById('metodo-passe-section').style.display = 'none';
+                            document.getElementById('btn-renovar-text').textContent = 'Ativar renovação gratuita';
+                        }
+                    }
+                }
+            } catch (e) {
+                infoMsg.textContent = 'Passe a renovar';
+            }
+
+            // Hide new-pass selection sections, show confirm button
+            ['tipo-passe-grid', 'coroa-grid', 'price-section'].forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                const wrap = el.closest('section, .sp-card, .sp-coroa-grid, .sp-price-card');
+                if (wrap) wrap.style.display = 'none'; else el.style.display = 'none';
+            });
+            document.getElementById('btn-criar').style.display = 'none';
+            document.getElementById('btn-renovar-confirmar').style.display = '';
+        }
+
+        document.getElementById('btn-renovar-confirmar').addEventListener('click', async () => {
+            const btn      = document.getElementById('btn-renovar-confirmar');
+            const feedback = document.getElementById('feedback-msg');
+            btn.disabled = true;
+            document.getElementById('btn-renovar-text').textContent = 'A renovar…';
+            feedback.style.display = 'none';
+            try {
+                const bodyRenovar = { metodo: selectedMetodoPasse };
+                const res = await fetch(`${API}/api/user/passes/${renovarPasseId}/renovar`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(bodyRenovar)
+                });
+                if (res.status === 401 || res.status === 403) { window.location.href = 'index.html'; return; }
+                const data = await res.json();
+                if (res.ok) {
+                    window.location.href = 'carteira.html?novo=' + renovarPasseId;
+                } else {
+                    feedback.className = 'sp-feedback sp-feedback--error';
+                    feedback.textContent = data.message || 'Erro ao renovar passe.';
+                    feedback.style.display = '';
+                    btn.disabled = false;
+                    document.getElementById('btn-renovar-text').textContent = 'Confirmar renovação';
+                }
+            } catch (e) {
+                feedback.className = 'sp-feedback sp-feedback--error';
+                feedback.textContent = 'Erro ao comunicar com o servidor.';
+                feedback.style.display = '';
+                btn.disabled = false;
+                document.getElementById('btn-renovar-text').textContent = 'Confirmar renovação';
+            }
+        });
+
+        // ── Aviso fotografia ───────────────────────────────────────────────────
+        async function verificarFotoPasse() {
+            try {
+                const res = await fetch(`${API}/api/cliente/dados`, { credentials: 'include' });
+                if (!res.ok) return;
+                const data = await res.json();
+                if (data.temFotoPasse === false) {
+                    const aviso = document.getElementById('aviso-foto-passe');
+                    if (aviso) aviso.style.display = '';
+                }
+            } catch (e) {
+                // aviso é informativo — falha silenciosa
+            }
+        }
+
+        // ── Init ───────────────────────────────────────────────────────────────
+        document.addEventListener('DOMContentLoaded', async () => {
+            document.getElementById('metodo-passe-saldo').addEventListener('click', () => selecionarMetodoPasse('SALDO_CONTA'));
+
+            const authed = await verificarSessao();
+            if (!renovarPasseId) {
+                carregarTiposPasse();
+                carregarCoroas();
+            }
+            if (authed) {
+                await carregarEstatuto();
+                verificarFotoPasse(); // não-bloqueante — falha não impede compra
+                if (renovarPasseId) {
+                    await iniciarModoRenovar(renovarPasseId);
+                } else {
+                    await verificarPasseBloqueante();
+                }
+                document.getElementById('passe-content').style.display = '';
+                carregarSaldoPasse();
+            }
+        });
+    </script>
+</body>
+</html>

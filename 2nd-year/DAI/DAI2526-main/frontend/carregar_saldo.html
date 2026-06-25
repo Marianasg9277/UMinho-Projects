@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>TUB – Carregar Saldo</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#0f8bb5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="TUB">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="subpage.css">
+    <style>
+        /* ── Saldo hero ── */
+        .saldo-atual {
+            display: flex; align-items: center; gap: 16px;
+            background: linear-gradient(135deg, #0077b6 0%, #00b4d8 100%);
+            border-radius: 18px; padding: 20px 22px;
+            color: #fff;
+            box-shadow: 0 6px 20px rgba(0,119,182,0.30);
+        }
+        .saldo-atual-icon { font-size: 2rem; flex-shrink: 0; }
+        .saldo-atual-valor { font-size: 1.8rem; font-weight: 800; letter-spacing: -0.5px; line-height: 1; }
+        .saldo-atual-label { font-size: 0.82rem; opacity: 0.85; margin-top: 3px; }
+
+        /* ── Form fields ── */
+        .form-group { margin-bottom: 16px; }
+        .form-group label {
+            display: block; font-size: 0.82rem;
+            font-weight: 600; color: #374151; margin-bottom: 5px;
+        }
+        .form-group input,
+        .form-group select {
+            width: 100%; padding: 10px 12px; border-radius: 10px;
+            border: 1.5px solid #e2e8f0; font-size: 0.92rem;
+            font-family: inherit; color: #1a1a2e;
+            background: rgba(255,255,255,0.8);
+            box-sizing: border-box; transition: border-color 0.15s;
+            appearance: none; -webkit-appearance: none;
+        }
+        .form-group select {
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23555' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 16px;
+            padding-right: 36px;
+            cursor: pointer;
+        }
+        .form-group input:focus,
+        .form-group select:focus { outline: none; border-color: #00a2e8; }
+        .form-group input.erro,
+        .form-group select.erro  { border-color: #dc2626; }
+        .form-group .hint { font-size: 0.78rem; color: #94a3b8; margin-top: 4px; }
+
+        /* ── Quick-value chips ── */
+        .valor-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+            margin-bottom: 14px;
+        }
+        .valor-chip {
+            padding: 10px 8px; border-radius: 10px; border: 1.5px solid #e2e8f0;
+            background: rgba(255,255,255,0.8); font-size: 0.92rem;
+            font-weight: 600; color: #374151; cursor: pointer;
+            text-align: center; transition: all 0.15s; margin-bottom: 0;
+        }
+        .valor-chip:hover,
+        .valor-chip.ativo {
+            border-color: #0077b6; background: rgba(0,119,182,0.08); color: #0077b6;
+        }
+        @media (max-width: 360px) {
+            .valor-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        /* ── Checkbox row ── */
+        .checkbox-row {
+            display: flex; align-items: center; gap: 10px;
+            padding: 12px 14px;
+            background: rgba(0,162,232,0.06);
+            border: 1px solid rgba(0,162,232,0.15);
+            border-radius: 10px; cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .checkbox-row:has(input[type="checkbox"]:checked) {
+            background: rgba(0,119,182,0.13);
+            border-color: rgba(0,119,182,0.38);
+        }
+        .checkbox-row input[type="checkbox"] {
+            width: 18px; height: 18px; cursor: pointer;
+            accent-color: #0077b6; flex-shrink: 0;
+        }
+        .checkbox-row span {
+            font-size: 0.88rem; font-weight: 500; color: #1a1a2e;
+            transition: color 0.15s, font-weight 0.15s;
+        }
+        .checkbox-row:has(input[type="checkbox"]:checked) span { color: #0077b6; font-weight: 700; }
+
+        /* ── Card option (cartão selecionável) ── */
+        .cartao-option {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 14px; border-radius: 10px;
+            border: 1.5px solid #e2e8f0; margin-bottom: 8px;
+            cursor: pointer; background: rgba(255,255,255,0.8);
+            transition: all 0.18s ease;
+            width: 100%; box-sizing: border-box;
+        }
+        .cartao-option:last-child { margin-bottom: 0; }
+        .cartao-option:hover {
+            background: rgba(0,119,182,0.03);
+            border-color: rgba(0,119,182,0.25);
+        }
+        .cartao-option.selecionado { border-color: #0077b6; background: rgba(0,119,182,0.06); }
+        .cartao-option input[type="radio"] {
+            accent-color: #0077b6; flex-shrink: 0;
+            margin: 0; width: 18px; height: 18px; cursor: pointer;
+        }
+        .cartao-option-info   { font-size: 0.9rem; font-weight: 700; color: #1a1a2e; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .cartao-option-detalhe { font-size: 0.78rem; color: #64748b; margin-top: 4px; }
+        .badge-predef {
+            font-size: 0.70rem; font-weight: 600;
+            background: rgba(0,162,232,0.12); color: #0077b6;
+            padding: 2px 7px; border-radius: 20px;
+        }
+        .cartao-bandeira {
+            font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.05em; color: #6b7280;
+            background: rgba(0,0,0,0.06); padding: 2px 7px; border-radius: 6px;
+            margin-right: 2px;
+        }
+
+        /* ── Feedback messages ── */
+        .msg-erro {
+            background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2);
+            color: #dc2626; border-radius: 10px; padding: 12px 16px;
+            font-size: 0.88rem; margin-bottom: 0; display: none;
+        }
+        .msg-sucesso {
+            background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.2);
+            color: #16a34a; border-radius: 10px; padding: 12px 16px;
+            font-size: 0.88rem; margin-bottom: 0; display: none;
+        }
+        .msg-sucesso strong { font-weight: 700; }
+
+        /* ── Empty state ── */
+        .empty-state { text-align: center; padding: 20px; color: #94a3b8; font-size: 0.88rem; }
+
+        /* ── Submit button ── */
+        #btn-submeter { width: 100%; margin-bottom: 0; }
+        #btn-submeter:disabled { opacity: 0.6; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+<script src="session-guard.js"></script>
+<div class="bg-shape shape1"></div>
+<div class="bg-shape shape2"></div>
+
+<header class="sp-header">
+    <a href="carteira.html" class="sp-back-btn" aria-label="Carteira">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+    </a>
+    <h1 class="sp-page-title">Carregar Saldo</h1>
+    <div class="sp-header-right"></div>
+</header>
+
+<main class="kf-main" style="padding-bottom:40px;">
+
+    <!-- Saldo atual -->
+    <div class="saldo-atual" id="saldo-atual">
+        <div class="saldo-atual-icon">&#128179;</div>
+        <div>
+            <div class="saldo-atual-valor" id="saldo-valor">—</div>
+            <div class="saldo-atual-label">Saldo disponível</div>
+        </div>
+    </div>
+
+    <!-- Mensagens globais -->
+    <div class="msg-erro"    id="msg-erro"></div>
+    <div class="msg-sucesso" id="msg-sucesso"></div>
+
+    <!-- Valor a carregar -->
+    <div class="sp-card">
+        <h2 class="sp-section-title">Valor a carregar</h2>
+
+        <div class="valor-grid">
+            <div class="valor-chip" onclick="selecionarValor(5)">5 €</div>
+            <div class="valor-chip" onclick="selecionarValor(10)">10 €</div>
+            <div class="valor-chip" onclick="selecionarValor(20)">20 €</div>
+            <div class="valor-chip" onclick="selecionarValor(50)">50 €</div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:0;">
+            <label for="valor">Outro valor (€)</label>
+            <input type="number" id="valor" min="1" max="250" step="0.01"
+                   placeholder="Entre 1,00 € e 250,00 €"
+                   oninput="limparChips()">
+            <div class="hint">Mínimo 1,00 € · Máximo 250,00 €</div>
+        </div>
+    </div>
+
+    <!-- Método de pagamento -->
+    <div class="sp-card">
+        <h2 class="sp-section-title">Método de pagamento</h2>
+
+        <div class="form-group">
+            <label for="metodo">Escolher método</label>
+            <select id="metodo" onchange="onMetodoChange()">
+                <option value="">-- Selecionar --</option>
+                <option value="CARTAO_PREDEFINIDO">Cartão predefinido</option>
+                <option value="CARTAO_ESPECIFICO">Outro cartão da conta</option>
+                <option value="MBWAY">MB Way</option>
+            </select>
+        </div>
+
+        <!-- Cartão predefinido (informação) -->
+        <div id="grupo-predef" style="display:none;">
+            <div id="info-predef" class="empty-state">A carregar cartão...</div>
+        </div>
+
+        <!-- Lista de cartões para seleção específica -->
+        <div id="grupo-cartao-especifico" style="display:none; width:100%; box-sizing:border-box; border:none; outline:none; box-shadow:none;">
+            <div class="form-group" style="margin-bottom:0; width:100%; box-sizing:border-box; border:none; outline:none; box-shadow:none;">
+                <label>Escolher cartão</label>
+                <div id="lista-cartoes-selecao" style="width:100%; height:auto; min-height:0; overflow:visible; box-sizing:border-box; border:none; outline:none; box-shadow:none;">
+                    <div class="empty-state">A carregar cartões…</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Telefone MB Way -->
+        <div id="grupo-telefone" style="display:none;">
+            <div class="form-group" style="margin-bottom:0;">
+                <label for="telefone">Número de telemóvel</label>
+                <input type="tel" id="telefone" placeholder="9XXXXXXXX" maxlength="9">
+                <div class="hint">9 dígitos, começando por 9</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fatura -->
+    <div class="sp-card">
+        <h2 class="sp-section-title">Fatura</h2>
+
+        <div class="form-group">
+            <label class="checkbox-row" for="emitirNif">
+                <input type="checkbox" id="emitirNif" onchange="onNifChange()" checked>
+                <span>Incluir NIF na fatura</span>
+            </label>
+        </div>
+
+        <div id="grupo-nif">
+            <div class="form-group">
+                <label for="nif">NIF</label>
+                <input type="text" id="nif" placeholder="XXXXXXXXX" maxlength="9">
+            </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:0;">
+            <label for="emailFatura">Email para a fatura (opcional)</label>
+            <input type="email" id="emailFatura" placeholder="Deixar vazio para usar o email da conta">
+        </div>
+    </div>
+
+    <button class="btn-primary" id="btn-submeter" onclick="submeter()">
+        Carregar Saldo
+    </button>
+
+</main>
+
+<script>
+let todosCartoes = [];
+let cartaoEspecificoId = null;
+
+// ─── Inicialização ────────────────────────────────────────────────────────────
+
+document.addEventListener('DOMContentLoaded', () => {
+    carregarSaldoAtual();
+    carregarCartoes();
+});
+
+async function carregarSaldoAtual() {
+    try {
+        const res = await fetch('/api/user/conta', { credentials: 'include' });
+        if (res.status === 401 || res.status === 403) { redirecionarLogin(); return; }
+        if (!res.ok) throw new Error('Erro ao obter saldo.');
+        const data = await res.json();
+        document.getElementById('saldo-valor').textContent =
+            parseFloat(data.saldo).toFixed(2).replace('.', ',') + ' €';
+    } catch (e) {
+        document.getElementById('saldo-valor').textContent = '—';
+    }
+}
+
+async function carregarCartoes() {
+    try {
+        const res = await fetch('/api/user/cartoes', { credentials: 'include' });
+        if (res.status === 401 || res.status === 403) { redirecionarLogin(); return; }
+        if (!res.ok) throw new Error('Erro ao carregar cartões.');
+        todosCartoes = await res.json();
+        renderizarCartoesEspecificos();
+        renderizarInfoPredefinido();
+    } catch (e) {
+        // Cartões indisponíveis — métodos de cartão ficarão vazios
+    }
+}
+
+// ─── Render de cartões ────────────────────────────────────────────────────────
+
+function renderizarInfoPredefinido() {
+    const container = document.getElementById('info-predef');
+    const pred = todosCartoes.find(c => c.predefinido);
+    if (pred) {
+        container.innerHTML = `
+            <div class="cartao-option selecionado">
+                <div class="cartao-option-info">
+                    <strong>${pred.bandeira} •••• ${pred.ultimos4Digitos}</strong>
+                    <span class="badge-predef">Predefinido</span>
+                    <div class="cartao-option-detalhe">${pred.nomeTitular} · ${String(pred.mesValidade).padStart(2,'0')}/${pred.anoValidade}</div>
+                </div>
+            </div>`;
+    } else {
+        container.innerHTML = '<div class="empty-state">Sem cartão predefinido associado à conta.</div>';
+    }
+}
+
+function renderizarCartoesEspecificos() {
+    const container = document.getElementById('lista-cartoes-selecao');
+    if (todosCartoes.length === 0) {
+        container.innerHTML = '<div class="empty-state">Não tens cartões associados.</div>';
+        return;
+    }
+    container.innerHTML = todosCartoes.map(c => {
+        const bandHtml = c.bandeira ? `<span class="cartao-bandeira">${c.bandeira}</span>` : '';
+        const predHtml = c.predefinido ? `<span class="badge-predef">Predefinido</span>` : '';
+        const mesStr = String(c.mesValidade).padStart(2, '0');
+        
+        return `
+            <div class="cartao-option" id="co-${c.id}" onclick="selecionarCartao(${c.id})">
+                <input type="radio" name="cartaoEspecifico" value="${c.id}" onchange="selecionarCartao(${c.id})">
+                <div style="flex: 1; min-width: 0;">
+                    <div class="cartao-option-info">
+                        ${bandHtml}
+                        <span>•••• ${c.ultimos4Digitos}</span>
+                        ${predHtml}
+                    </div>
+                    <div class="cartao-option-detalhe">
+                        ${c.nomeTitular} · ${mesStr}/${c.anoValidade}
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function selecionarCartao(id) {
+    cartaoEspecificoId = id;
+    document.querySelectorAll('.cartao-option').forEach(el => el.classList.remove('selecionado'));
+    const el = document.getElementById('co-' + id);
+    if (el) el.classList.add('selecionado');
+    const radio = el ? el.querySelector('input[type="radio"]') : null;
+    if (radio) radio.checked = true;
+}
+
+// ─── Chips de valor ───────────────────────────────────────────────────────────
+
+function selecionarValor(v) {
+    document.getElementById('valor').value = v;
+    document.querySelectorAll('.valor-chip').forEach(c => c.classList.remove('ativo'));
+    event.currentTarget.classList.add('ativo');
+}
+
+function limparChips() {
+    document.querySelectorAll('.valor-chip').forEach(c => c.classList.remove('ativo'));
+}
+
+// ─── Visibilidade condicional ─────────────────────────────────────────────────
+
+function onMetodoChange() {
+    const metodo = document.getElementById('metodo').value;
+    document.getElementById('grupo-predef').style.display = (metodo === 'CARTAO_PREDEFINIDO') ? 'block' : 'none';
+    document.getElementById('grupo-cartao-especifico').style.display = (metodo === 'CARTAO_ESPECIFICO') ? 'block' : 'none';
+    document.getElementById('grupo-telefone').style.display = (metodo === 'MBWAY') ? 'block' : 'none';
+    cartaoEspecificoId = null;
+}
+
+function onNifChange() {
+    const checked = document.getElementById('emitirNif').checked;
+    document.getElementById('grupo-nif').style.display = checked ? 'block' : 'none';
+}
+
+// ─── Submissão ────────────────────────────────────────────────────────────────
+
+async function submeter() {
+    esconderMensagens();
+
+    const valorRaw = parseFloat(document.getElementById('valor').value);
+    const metodo = document.getElementById('metodo').value;
+    const emitirNif = document.getElementById('emitirNif').checked;
+    const nif = document.getElementById('nif').value.trim();
+    const emailFatura = document.getElementById('emailFatura').value.trim();
+
+    // Validação cliente
+    if (isNaN(valorRaw) || valorRaw < 1 || valorRaw > 250) {
+        mostrarErro('O valor deve estar entre 1,00 € e 250,00 €.');
+        return;
+    }
+    if (!metodo) {
+        mostrarErro('Escolha um método de pagamento.');
+        return;
+    }
+    if (metodo === 'CARTAO_ESPECIFICO' && !cartaoEspecificoId) {
+        mostrarErro('Selecione um cartão da lista.');
+        return;
+    }
+    if (metodo === 'MBWAY') {
+        const tel = document.getElementById('telefone').value.replace(/\s/g, '');
+        if (!/^9\d{8}$/.test(tel)) {
+            mostrarErro('Número MB Way inválido. Deve ter 9 dígitos e começar por 9.');
+            return;
+        }
+    }
+    if (emitirNif && !/^\d{9}$/.test(nif)) {
+        mostrarErro('NIF inválido. Deve ter exatamente 9 dígitos.');
+        return;
+    }
+
+    const btn = document.getElementById('btn-submeter');
+    btn.disabled = true;
+    btn.textContent = 'A processar…';
+
+    const body = {
+        valor: parseFloat(valorRaw.toFixed(2)),
+        metodoPagamento: metodo,
+        cartaoId: metodo === 'CARTAO_ESPECIFICO' ? cartaoEspecificoId : null,
+        telefone: metodo === 'MBWAY' ? document.getElementById('telefone').value.replace(/\s/g, '') : null,
+        emitirFaturaComNif: emitirNif,
+        nif: emitirNif ? nif : null,
+        emailFatura: emailFatura || null
+    };
+
+    try {
+        const res = await fetch('/api/user/conta/carregamentos', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+
+        if (res.status === 401 || res.status === 403) { redirecionarLogin(); return; }
+
+        const data = await res.json();
+
+        if (res.ok) {
+            const novoSaldo = parseFloat(data.novoSaldo).toFixed(2).replace('.', ',');
+            document.getElementById('saldo-valor').textContent = novoSaldo + ' €';
+            mostrarSucesso(
+                `Carregamento de <strong>${valorRaw.toFixed(2).replace('.', ',')} €</strong> efetuado com sucesso!` +
+                `<br>Novo saldo: <strong>${novoSaldo} €</strong>` +
+                (data.faturaNumero ? `<br>Fatura: <strong>${data.faturaNumero}</strong>` : '') +
+                (data.referenciaExterna ? `<br>Referência: <code>${data.referenciaExterna}</code>` : '')
+            );
+            document.getElementById('valor').value = '';
+            limparChips();
+        } else {
+            mostrarErro(data.message || 'Erro ao processar carregamento.');
+        }
+    } catch (e) {
+        mostrarErro('Erro de rede. Verifique a sua ligação e tente novamente.');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Carregar Saldo';
+    }
+}
+
+// ─── Utilitários ──────────────────────────────────────────────────────────────
+
+function mostrarErro(msg) {
+    const el = document.getElementById('msg-erro');
+    el.innerHTML = msg;
+    el.style.display = 'block';
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function mostrarSucesso(msg) {
+    const el = document.getElementById('msg-sucesso');
+    el.innerHTML = msg;
+    el.style.display = 'block';
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function esconderMensagens() {
+    document.getElementById('msg-erro').style.display = 'none';
+    document.getElementById('msg-sucesso').style.display = 'none';
+}
+
+function redirecionarLogin() {
+    localStorage.clear();
+    window.location.replace('index.html');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>TUB – Faturas</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#0f8bb5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="TUB">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="subpage.css">
+    <style>
+        .fat-row {
+            display: flex; align-items: center; gap: 12px;
+            padding: 13px 0; border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+        .fat-row:last-child { border-bottom: none; padding-bottom: 0; }
+        .fat-icon {
+            width: 42px; height: 42px; border-radius: 13px;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+            background: rgba(52,199,89,0.12); color: #1aa855;
+        }
+        .fat-info { flex: 1; min-width: 0; }
+        .fat-titulo { font-size: 0.88rem; font-weight: 700; color: #1a1a2e; overflow-wrap: break-word; }
+        .fat-sub    { font-size: 0.74rem; color: #9ca3af; margin-top: 2px; }
+        .fat-right  { text-align: right; flex-shrink: 0; }
+        .fat-valor  { font-size: 0.88rem; font-weight: 800; color: #1a1a2e; white-space: nowrap; }
+        .btn-pdf {
+            display: inline-block; padding: 6px 11px; margin-top: 4px;
+            background: rgba(0,162,232,0.08); color: #0077b6;
+            border-radius: 10px; font-size: 0.72rem; font-weight: 700;
+            text-decoration: none; border: 1px solid rgba(0,162,232,0.2);
+            transition: background 0.15s;
+        }
+        .btn-pdf:hover { background: rgba(0,162,232,0.15); }
+        .fat-empty { text-align: center; padding: 24px 16px; color: #9ca3af; font-size: 0.88rem; }
+    </style>
+</head>
+<body>
+    <div class="bg-shape shape1"></div>
+    <div class="bg-shape shape2"></div>
+
+    <header class="sp-header">
+        <a href="pagamentos.html" class="sp-back-btn" aria-label="Voltar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+        </a>
+        <h1 class="sp-page-title">Faturas</h1>
+        <div class="sp-header-right"></div>
+    </header>
+
+    <main class="kf-main" style="padding-bottom:40px;">
+
+        <div id="auth-required" class="sp-card" style="display:none;text-align:center;padding:28px;">
+            <p style="color:#374151;font-size:0.92rem;margin-bottom:14px;">É necessário sessão iniciada para ver as faturas.</p>
+            <a href="index.html" class="sp-cta-btn" style="text-decoration:none;display:inline-flex;">Iniciar sessão</a>
+        </div>
+
+        <div id="faturas-lista">
+            <div class="sp-card">
+                <p class="fat-empty">A carregar faturas…</p>
+            </div>
+        </div>
+
+    </main>
+
+    <nav class="kf-bottom-nav" aria-label="Navegação principal">
+        <a href="index.html" class="kf-nav-item" id="nav-inicio">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            <span>Início</span>
+        </a>
+        <a href="carteira.html" class="kf-nav-item" id="nav-carteira">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="5" width="20" height="14" rx="2"/>
+                <path d="M16 12h4v4h-4a2 2 0 0 1 0-4z"/>
+            </svg>
+            <span>Carteira</span>
+        </a>
+        <a href="pagamentos.html" class="kf-nav-item kf-nav-item--active" id="nav-pagamentos" aria-current="page">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                <line x1="1" y1="10" x2="23" y2="10"></line>
+            </svg>
+            <span>Pagamentos</span>
+        </a>
+        <a href="perfil.html" class="kf-nav-item" id="nav-perfil">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span>Perfil</span>
+        </a>
+    </nav>
+
+    <script>
+        const API = '';
+
+        const TIPO_FAT_LABELS = {
+            'PASSE': 'Passe', 'BILHETE': 'Bilhete', 'CARREGAMENTO': 'Carregamento'
+        };
+
+        function formatPreco(v) {
+            return v != null ? parseFloat(v).toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €' : '—';
+        }
+
+        async function carregarFaturas() {
+            const lista = document.getElementById('faturas-lista');
+            try {
+                const res = await fetch(`${API}/api/user/faturas`, { credentials: 'include' });
+                if (res.status === 401 || res.status === 403) {
+                    lista.style.display = 'none';
+                    document.getElementById('auth-required').style.display = '';
+                    return;
+                }
+                if (!res.ok) throw new Error();
+                const faturas = await res.json();
+
+                if (!faturas.length) {
+                    lista.innerHTML = '<div class="sp-card"><p class="fat-empty">Ainda não tens faturas emitidas.</p></div>';
+                    return;
+                }
+
+                const docIcon = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>`;
+
+                lista.innerHTML = `<div class="sp-card">${faturas.map(f => {
+                    const tipoLabel = TIPO_FAT_LABELS[f.tipoObjeto] || f.tipoObjeto;
+                    return `
+                        <div class="fat-row">
+                            <div class="fat-icon">${docIcon}</div>
+                            <div class="fat-info">
+                                <div class="fat-titulo">${f.titulo}</div>
+                                <div class="fat-sub">${f.detalhe || tipoLabel}</div>
+                            </div>
+                            <div class="fat-right">
+                                <div class="fat-valor">${formatPreco(f.quantia)}</div>
+                                ${f.pdfUrl ? `<br><a href="${f.pdfUrl}" target="_blank" class="btn-pdf">PDF</a>` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('')}</div>`;
+            } catch (e) {
+                lista.innerHTML = '<div class="sp-card"><p class="fat-empty" style="color:#ef4444;">Erro ao carregar faturas.</p></div>';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!localStorage.getItem('nomeCompleto')) {
+                document.getElementById('faturas-lista').style.display = 'none';
+                document.getElementById('auth-required').style.display = '';
+                return;
+            }
+            carregarFaturas();
+        });
+    </script>
+    <script src="session-guard.js"></script>
+</body>
+</html>

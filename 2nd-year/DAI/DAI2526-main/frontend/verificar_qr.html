@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>TUB – Verificar QR</title>
+    <meta name="description" content="Verificação de código QR de passe ou bilhete TUB.">
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#0f8bb5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="TUB">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="subpage.css">
+    <script src="session-guard.js"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <style>
+        /* No bottom nav on this page — remove the reserved bottom padding */
+        .kf-main { padding-bottom: 1.5rem; }
+
+        /* ── Camera scanner ── */
+        #camera-viewport {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto 8px auto;
+            border-radius: 16px;
+            overflow: hidden;
+            background: #000;
+            aspect-ratio: 1 / 1;
+            display: none; /* shown after stream starts */
+        }
+        /* The library injects <video> inside #qr-reader */
+        #camera-viewport video {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: contain !important;
+            border-radius: 16px !important;
+            display: block !important;
+        }
+        /* Suppress library's internal dashboard/header/buttons */
+        #qr-reader__dashboard,
+        #qr-reader__header_message,
+        #qr-reader__status_span {
+            display: none !important;
+        }
+        /* Make the scan region fill our container */
+        #qr-reader__scan_region {
+            width: 100% !important;
+            border: none !important;
+        }
+        /* Scan-area overlay */
+        #scan-overlay {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+        #scan-frame {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 62%;
+            aspect-ratio: 1/1;
+            border-radius: 12px;
+            border: 2.5px solid rgba(255,255,255,0.85);
+            box-shadow: 0 0 0 2000px rgba(0,0,0,0.35);
+        }
+        /* Start camera button */
+        #btn-iniciar-camara {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 16px 20px;
+            background: linear-gradient(135deg, var(--tub-blue,#00a2e8) 0%, var(--tub-dark-blue,#005f8e) 100%);
+            color: #fff;
+            border: none;
+            border-radius: 14px;
+            font-size: 1rem;
+            font-weight: 700;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(0,162,232,0.4);
+            transition: transform 0.18s, box-shadow 0.18s, opacity 0.18s;
+            margin-bottom: 4px;
+        }
+        #btn-iniciar-camara:hover  { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(0,162,232,0.5); }
+        #btn-iniciar-camara:active { transform: scale(0.98); }
+        #btn-iniciar-camara:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+        /* ── Scanner state banner ── */
+        .scanner-banner {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 14px; border-radius: 12px; margin-top: 10px;
+            font-size: 0.82rem; font-weight: 600;
+        }
+        .scanner-banner--active   { background: rgba(52,199,89,0.1);  color: #1aa855; }
+        .scanner-banner--paused   { background: rgba(255,149,0,0.1);  color: #e07000; }
+        .scanner-banner--error    { background: rgba(239,68,68,0.08); color: #ef4444; }
+
+        /* ── Manual section toggle ── */
+        .manual-toggle {
+            width: 100%; background: none; border: none;
+            display: flex; align-items: center; justify-content: space-between;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem; font-weight: 600; color: #6b7280;
+            cursor: pointer; padding: 4px 0 12px; margin: 0;
+        }
+        .manual-toggle svg { transition: transform 0.2s; }
+        .manual-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+
+        .line-context {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            margin-top: 14px;
+        }
+        .line-context label {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .line-context select {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(0,0,0,0.08);
+            background: rgba(255,255,255,0.72);
+            color: #1a1a2e;
+            font-size: 0.9rem;
+            outline: none;
+        }
+        .line-context select:focus {
+            border-color: var(--tub-blue);
+            box-shadow: 0 0 0 3px rgba(0,162,232,0.15);
+        }
+
+        /* ── Result card ── */
+        .vqr-result {
+            padding: 24px 20px;
+            background: rgba(255,255,255,0.72);
+            backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255,255,255,0.55);
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        .vqr-result--valid   { border-left: 4px solid #1aa855; }
+        .vqr-result--invalid { border-left: 4px solid #ef4444; }
+
+        /* ── Status badge ── */
+        .vqr-status { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+        .vqr-status-icon {
+            width: 52px; height: 52px; border-radius: 16px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; font-size: 1.5rem;
+        }
+        .vqr-status-icon--valid   { background: rgba(52,199,89,0.15); }
+        .vqr-status-icon--invalid { background: rgba(239,68,68,0.12); }
+        .vqr-status-label { font-size: 1.1rem; font-weight: 800; letter-spacing: -0.01em; }
+        .vqr-status-label--valid   { color: #1aa855; }
+        .vqr-status-label--invalid { color: #ef4444; }
+        .vqr-status-msg { font-size: 0.82rem; color: #6b7280; margin-top: 2px; }
+
+        /* ── Foto do titular (validação de passe) ── */
+        .vqr-titular-wrap {
+            display: flex; align-items: center; gap: 14px;
+            padding: 14px 0 16px;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            margin-bottom: 4px;
+        }
+        .vqr-titular-img {
+            width: 72px; height: 72px; border-radius: 50%;
+            object-fit: cover; flex-shrink: 0; display: block;
+            border: 2.5px solid rgba(0,162,232,0.35);
+        }
+        .vqr-titular-placeholder {
+            width: 72px; height: 72px; border-radius: 50%; flex-shrink: 0;
+            background: rgba(0,162,232,0.08);
+            border: 2px dashed rgba(0,162,232,0.25);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .vqr-titular-label {
+            font-size: 0.72rem; font-weight: 700; color: #9ca3af;
+            text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 3px;
+        }
+        .vqr-titular-nome {
+            font-size: 0.95rem; font-weight: 700; color: #1a1a2e; line-height: 1.3;
+        }
+
+        /* ── Detail rows ── */
+        .vqr-detail-list { display: flex; flex-direction: column; gap: 10px; }
+        .vqr-detail-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0; border-bottom: 1px solid rgba(0,0,0,0.05); font-size: 0.88rem;
+        }
+        .vqr-detail-row:last-child { border-bottom: none; }
+        .vqr-detail-label {
+            color: #9ca3af; font-weight: 600; font-size: 0.78rem;
+            text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .vqr-detail-value { font-weight: 700; color: #1a1a2e; text-align: right; }
+
+        /* ── Input section ── */
+        .vqr-input-wrap { display: flex; gap: 10px; }
+        .vqr-input-wrap .sp-input {
+            flex: 1; font-family: 'Courier New', monospace; font-size: 0.82rem;
+        }
+        .vqr-submit-btn {
+            flex-shrink: 0; padding: 12px 20px;
+            background: linear-gradient(135deg, var(--tub-blue) 0%, var(--tub-dark-blue) 100%);
+            color: #fff; border: none; border-radius: 12px;
+            font-size: 0.9rem; font-weight: 700; font-family: 'Inter', sans-serif;
+            cursor: pointer; box-shadow: 0 4px 14px rgba(0,162,232,0.35);
+            transition: transform 0.2s, box-shadow 0.2s; width: auto; margin-bottom: 0;
+        }
+        .vqr-submit-btn:hover   { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(0,162,232,0.45); }
+        .vqr-submit-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+        /* ── Empty state ── */
+        .vqr-empty { text-align: center; padding: 32px 16px; color: #9ca3af; }
+        .vqr-empty svg { margin-bottom: 12px; opacity: 0.4; }
+        .vqr-empty p { font-size: 0.88rem; line-height: 1.5; }
+    </style>
+</head>
+<body>
+    <div class="bg-shape shape1"></div>
+    <div class="bg-shape shape2"></div>
+
+    <!-- Header -->
+    <header class="sp-header">
+        <a id="back-btn" href="perfil_motorista.html" class="sp-back-btn" aria-label="Perfil">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+        </a>
+        <h1 class="sp-page-title">Validar QR</h1>
+        <div class="sp-header-right">
+            <button class="sp-back-btn" onclick="logout()" aria-label="Terminar sessão" style="cursor:pointer;border:none;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16 17 21 12 16 7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <main class="kf-main">
+
+        <!-- ── Câmara QR Scanner ── -->
+        <section class="sp-card" id="camera-section" style="margin-bottom:14px;">
+            <h2 class="sp-section-title" style="margin-bottom:14px;">Câmara</h2>
+
+            <!-- Video viewport (shown only after stream is live) -->
+            <!-- Html5Qrcode manages its own <video playsinline> inside this div -->
+            <div id="camera-viewport">
+                <div id="qr-reader"></div>
+                <div id="scan-overlay">
+                    <div id="scan-frame"></div>
+                </div>
+            </div>
+
+            <!-- Explicit start button — required for iOS Safari getUserMedia -->
+            <button id="btn-iniciar-camara" onclick="iniciarScanner()">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M23 7l-7 5 7 5V7z"></path>
+                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                </svg>
+                Ativar Câmara
+            </button>
+
+            <!-- State banner (hidden until scanner has a real state) -->
+            <div id="scanner-banner" class="scanner-banner" style="display:none;">
+                <svg id="scanner-banner-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span id="scanner-banner-msg"></span>
+            </div>
+
+            <div class="line-context">
+                <label for="coroa-contexto">Coroa / Zona</label>
+                <select id="coroa-contexto">
+                    <option value="">Selecione a coroa&hellip;</option>
+                </select>
+            </div>
+
+            <!-- ── Fallback: seleção manual de linha (só aparece se backend pedir) ── -->
+            <div id="fallback-linha" style="display:none; margin-top:14px;">
+                <div style="background:rgba(255,149,0,0.08); border:1px solid rgba(255,149,0,0.25); border-radius:12px; padding:14px 16px;">
+                    <div style="font-size:0.8rem; font-weight:700; color:#e07000; margin-bottom:10px; display:flex; align-items:center; gap:7px;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                        Sem linha alocada — selecione manualmente
+                    </div>
+                    <div class="line-context" style="margin-top:0;">
+                        <label for="linha-fallback">Linha em servi&ccedil;o</label>
+                        <select id="linha-fallback">
+                            <option value="">Linha n&atilde;o especificada</option>
+                        </select>
+                    </div>
+                    <button id="btn-reenviar" onclick="verificarComFallback()" class="vqr-submit-btn" style="width:100%; margin-top:12px; padding:13px;">
+                        Validar com esta linha
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── Inserção Manual (collapsible) ── -->
+        <section class="sp-card" style="margin-bottom:14px;">
+            <button class="manual-toggle" id="manual-toggle" aria-expanded="false" onclick="toggleManual()">
+                Inserção manual
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+            </button>
+            <div id="manual-panel" style="display:none;">
+                <div class="vqr-input-wrap">
+                    <input
+                        type="text"
+                        id="qr-input"
+                        class="sp-input"
+                        placeholder="Cole ou escreva o token QR aqui…"
+                        autocomplete="off"
+                        spellcheck="false"
+                    />
+                    <button id="btn-verificar" class="vqr-submit-btn" onclick="verificar()">
+                        Verificar
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Result area -->
+        <div id="result-area">
+            <!-- Empty state -->
+            <div class="vqr-empty" id="estado-vazio">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+                    <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+                    <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+                    <path d="M14 14h3v3h-3z"></path>
+                    <path d="M17 17h3v3h-3z"></path>
+                    <path d="M14 17h0"></path>
+                </svg>
+                <p>Aponte a câmara para um código QR<br>ou insira o token manualmente.</p>
+            </div>
+
+            <!-- Result card (hidden until verified) -->
+            <div class="vqr-result" id="resultado-card" style="display:none;">
+                <div class="vqr-status">
+                    <div class="vqr-status-icon" id="res-icon"></div>
+                    <div>
+                        <div class="vqr-status-label" id="res-label"></div>
+                        <div class="vqr-status-msg" id="res-msg"></div>
+                    </div>
+                </div>
+                <!-- Foto + nome do titular (apenas para passes) -->
+                <div id="res-foto-wrap" class="vqr-titular-wrap" style="display:none;">
+                    <img id="res-foto-img" class="vqr-titular-img" alt="Titular"
+                         onerror="this.style.display='none';document.getElementById('res-foto-ph').style.display='flex';">
+                    <div id="res-foto-ph" class="vqr-titular-placeholder" style="display:none;">
+                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="rgba(0,162,232,0.45)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="vqr-titular-label">Titular</div>
+                        <div class="vqr-titular-nome" id="res-foto-nome"></div>
+                    </div>
+                </div>
+
+                <div class="vqr-detail-list" id="res-details" style="display:none;">
+                    <div class="vqr-detail-row" id="res-titular-row">
+                        <span class="vqr-detail-label">Titular</span>
+                        <span class="vqr-detail-value" id="res-titular">—</span>
+                    </div>
+                    <div class="vqr-detail-row">
+                        <span class="vqr-detail-label">Tipo</span>
+                        <span class="vqr-detail-value" id="res-tipo">—</span>
+                    </div>
+                    <div class="vqr-detail-row">
+                        <span class="vqr-detail-label">Zona / Coroa</span>
+                        <span class="vqr-detail-value" id="res-coroa">—</span>
+                    </div>
+                    <div class="vqr-detail-row" id="res-coroa-validada-row" style="display:none;">
+                        <span class="vqr-detail-label">Coroa validada</span>
+                        <span class="vqr-detail-value" id="res-coroa-validada">—</span>
+                    </div>
+                    <div class="vqr-detail-row" id="res-linha-alocada-row" style="display:none;">
+                        <span class="vqr-detail-label">Linha usada</span>
+                        <span class="vqr-detail-value" id="res-linha-alocada">—</span>
+                    </div>
+                    <div class="vqr-detail-row">
+                        <span class="vqr-detail-label">Válido de</span>
+                        <span class="vqr-detail-value" id="res-inicio">—</span>
+                    </div>
+                    <div class="vqr-detail-row">
+                        <span class="vqr-detail-label">Válido até</span>
+                        <span class="vqr-detail-value" id="res-fim">—</span>
+                    </div>
+                    <div class="vqr-detail-row">
+                        <span class="vqr-detail-label">Estado</span>
+                        <span class="vqr-detail-value" id="res-estado">—</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- New check button (shown after result) -->
+        <button class="sp-cta-btn" id="btn-novo" style="display:none;" onclick="novaVerificacao()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="1 4 1 10 7 10"></polyline>
+                <path d="M3.51 15a9 9 0 1 0 .49-3.1"></path>
+            </svg>
+            Nova verificação
+        </button>
+
+    </main>
+
+
+    <script>
+        const API = '';
+
+        // Ajustar o botão "voltar" consoante a role: FISCALIZADOR volta para fiscalizacao.html,
+        // MOTORISTA (e qualquer outro) volta para perfil_motorista.html
+        (function () {
+            const role = localStorage.getItem('role');
+            if (role === 'FISCALIZADOR') {
+                const btn = document.getElementById('back-btn');
+                if (btn) btn.href = 'fiscalizacao.html';
+            }
+        })();
+
+        const ESTADO_LABELS = {
+            'ACTIVE':        'Ativo',
+            'INACTIVE':      'Inativo',
+            'FALTA_RENOVAR': 'A precisar de renovação',
+            'INVALIDO':      'Inválido'
+        };
+
+        const MOTIVO_LABELS = {
+            'TOKEN_EXPIRADO':         'Código QR expirado — peça ao passageiro que gere um novo QR',
+            'TOKEN_REVOGADO':         'Código QR revogado — não é válido para validação',
+            'TOKEN_NAO_ENCONTRADO':   'Código QR não reconhecido — verifique o código e tente novamente',
+            'PASSE_EXPIRADO':         'Passe expirado',
+            'PASSE_NAO_INICIADO':     'Passe ainda não iniciado',
+            'PASSE_INATIVO':          'Passe inativo (pagamento pendente)',
+            'PASSE_INVALIDO':         'Passe inválido',
+            'BILHETE_JA_USADO':       'Bilhete já utilizado',
+            'BILHETE_NAO_PAGO':       'Bilhete não pago',
+            'BILHETE_EXPIRADO':       'Bilhete expirado',
+            'COROA_INSUFICIENTE':     'O título não é válido nesta coroa/zona',
+            'COROA_INVALIDA':         'Coroa/zona não reconhecida — selecione novamente',
+            'SEM_LINHA_ALOCADA':      'Sem linha alocada. Selecione a linha manualmente.',
+        };
+
+        function formatData(s) {
+            if (!s) return '—';
+            const [y, m, d] = s.split('-');
+            return `${d}/${m}/${y}`;
+        }
+
+        // ── QR Scanner (core Html5Qrcode API — iOS Safari compatible) ────────
+        //
+        // ARCHITECTURE:
+        //   1. Html5Qrcode is instantiated once on load (no camera yet).
+        //   2. The camera ONLY starts when the user taps #btn-iniciar-camara.
+        //      This guarantees getUserMedia() is called inside a user-gesture
+        //      call stack, satisfying iOS Safari's strict security model.
+        //   3. .start() returns a Promise — the "active" banner is shown only
+        //      after the stream is truly live (inside .then()), and permission
+        //      errors are caught and surfaced to the user (inside .catch()).
+        // ─────────────────────────────────────────────────────────────────────
+        let html5Qrcode = null;   // core scanner instance
+        let scannerAtivo = false; // true once stream is running
+        let scannerPausado = false;
+
+        // Initialise the instance (does NOT start the camera yet)
+        document.addEventListener('DOMContentLoaded', function () {
+            html5Qrcode = new Html5Qrcode('qr-reader', { verbose: false });
+            carregarCoroas();
+        });
+
+        // Carrega coroas do endpoint e filtra apenas Coroa 1 e Coroa 2
+        async function carregarCoroas() {
+            const select = document.getElementById('coroa-contexto');
+            if (!select) return;
+            try {
+                const res = await fetch(`${API}/api/coroas`);
+                if (!res.ok) return;
+                const coroas = await res.json();
+                // Apenas Coroa 1 e Coroa 2 são usadas neste caso de uso
+                const COROAS_VALIDAS = ['Coroa 1', 'Coroa 2'];
+                const coroasFiltradas = coroas.filter(c => COROAS_VALIDAS.includes(c.nome));
+                coroasFiltradas.sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || ''), 'pt', { numeric: true }));
+                select.innerHTML = '<option value="">Selecione a coroa&hellip;</option>' +
+                    coroasFiltradas.map(c => `<option value="${c.id}">${escapeHtml(c.nome)}</option>`).join('');
+            } catch (e) {
+                // Fallback com opções fixas se o endpoint falhar
+                select.innerHTML = '<option value="">Selecione a coroa&hellip;</option>' +
+                    '<option value="1">Coroa 1</option>' +
+                    '<option value="2">Coroa 2</option>';
+                console.warn('[QR-DEBUG] Erro ao carregar coroas do endpoint — a usar opções fixas:', e);
+            }
+        }
+
+        // Carrega linhas no select de fallback manual
+        async function carregarLinhasFallback() {
+            const select = document.getElementById('linha-fallback');
+            if (!select || select.dataset.carregado === 'true') return;
+            try {
+                const res = await fetch(`${API}/api/linhas`);
+                if (!res.ok) return;
+                const linhas = await res.json();
+                linhas.sort((a, b) => String(a.numero || '').localeCompare(String(b.numero || ''), 'pt', { numeric: true }));
+                select.innerHTML = '<option value="">Selecione a linha&hellip;</option>' +
+                    linhas.map(l => {
+                        const label = [l.numero, l.origem && l.destino ? `${l.origem} / ${l.destino}` : (l.nome || '')]
+                            .filter(Boolean).join(' — ');
+                        return `<option value="${l.id}">${escapeHtml(label)}</option>`;
+                    }).join('');
+                select.dataset.carregado = 'true';
+            } catch (e) {
+                console.warn('[QR-DEBUG] Erro ao carregar linhas para fallback:', e);
+            }
+        }
+
+        function iniciarScanner() {
+            if (!window.isSecureContext) {
+                mostrarBanner('error', 'A câmara no telemóvel requer HTTPS. Em HTTP por IP local, o Safari/Chrome bloqueia o acesso à câmara. Use HTTPS ou a inserção manual.');
+                document.getElementById('manual-toggle').setAttribute('aria-expanded', 'true');
+                document.getElementById('manual-panel').style.display = 'flex';
+                return;
+            }
+
+            const btn = document.getElementById('btn-iniciar-camara');
+            btn.disabled = true;
+            btn.textContent = 'A ligar câmara…';
+            scannerPausado = false;
+
+            // Stop any running stream before (re)starting
+            const stopPromise = (scannerAtivo && html5Qrcode)
+                ? html5Qrcode.stop().catch(() => {})
+                : Promise.resolve();
+
+            stopPromise.then(function () {
+                scannerAtivo = false;
+
+                // Lazily create the instance if it was cleaned up
+                if (!html5Qrcode) {
+                    html5Qrcode = new Html5Qrcode('qr-reader', { verbose: false });
+                }
+
+                const config = {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 },
+                    aspectRatio: 1.0,
+                    // Request rear camera — preferred on mobile
+                    videoConstraints: {
+                        facingMode: { ideal: 'environment' },
+                        // playsinline is injected by the library but we enforce it
+                        advanced: [{ facingMode: 'environment' }]
+                    }
+                };
+
+                html5Qrcode.start(
+                    { facingMode: { ideal: 'environment' } },
+                    config,
+                    onScanSuccess,   // called on each successful QR decode
+                    null             // per-frame failure is intentionally silent
+                )
+                .then(function () {
+                    // ✅ Stream is live — now it is safe to update the UI
+                    scannerAtivo = true;
+                    document.getElementById('camera-viewport').style.display = 'block';
+                    btn.style.display = 'none';
+                    mostrarBanner('active', 'Câmara ativa — aponte para um código QR');
+                })
+                .catch(function (err) {
+                    // ❌ getUserMedia rejected — permission denied or no camera
+                    scannerAtivo = false;
+                    btn.disabled = false;
+                    btn.innerHTML = [
+                        '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">',
+                        '<path d="M23 7l-7 5 7 5V7z"></path>',
+                        '<rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>',
+                        '</svg> Tentar novamente'
+                    ].join('');
+
+                    let mensagemErro = 'Câmara não disponível. Use a inserção manual.';
+                    if (err && err.name === 'NotAllowedError') {
+                        mensagemErro = 'Permissão da câmara recusada. Autorize nas definições do browser.';
+                    } else if (err && err.name === 'NotFoundError') {
+                        mensagemErro = 'Nenhuma câmara encontrada neste dispositivo.';
+                    } else if (err && err.name === 'NotReadableError') {
+                        mensagemErro = 'A câmara está a ser usada por outra aplicação.';
+                    }
+
+                    mostrarBanner('error', mensagemErro);
+
+                    // Auto-expand manual input as fallback
+                    document.getElementById('manual-toggle').setAttribute('aria-expanded', 'true');
+                    document.getElementById('manual-panel').style.display = 'flex';
+                });
+            });
+        }
+
+        function mostrarBanner(tipo, msg) {
+            const banner = document.getElementById('scanner-banner');
+            banner.className = `scanner-banner scanner-banner--${tipo}`;
+            document.getElementById('scanner-banner-msg').textContent = msg;
+            banner.style.display = '';
+        }
+
+        /**
+         * Normalize a raw QR scan result into the bare token string
+         * expected by GET /api/validar/qr/{token}.
+         *
+         * Contract:
+         *  - plain string → used as-is (the token itself)
+         *  - JSON object with "token" field → token value extracted
+         *  - JSON object WITHOUT "token" field → returns null (format error)
+         *  - double-encoded JSON string → unwrapped and re-evaluated
+         *
+         * Legacy fields (codigo, codigoQr, qrTokenAtual) are NOT accepted.
+         */
+        // [QR-DEBUG] ─── B. Normalização do conteúdo lido do QR ───────────────
+        function normalizeQrToken(raw) {
+            console.group('[QR-DEBUG] normalizeQrToken()');
+            console.info('[QR-DEBUG] Input bruto (raw):', raw);
+            console.info('[QR-DEBUG] typeof raw:', typeof raw, '| length:', (raw != null ? String(raw).length : 'N/A'));
+
+            let value = (typeof raw === 'string') ? raw.trim() : String(raw).trim();
+            console.info('[QR-DEBUG] Após trim inicial:', value);
+
+            // Attempt JSON.parse up to 2 times to handle double-encoded payloads
+            for (let attempt = 0; attempt < 2; attempt++) {
+                let parsed;
+                try {
+                    parsed = JSON.parse(value);
+                    console.info(`[QR-DEBUG] Tentativa JSON.parse #${attempt + 1}: sucesso | typeof resultado:`, typeof parsed);
+                } catch (e) {
+                    console.info(`[QR-DEBUG] Tentativa JSON.parse #${attempt + 1}: falhou (não é JSON) — a usar valor como texto plano`);
+                    break; // not JSON — value is the plain token string
+                }
+
+                // JSON.parse returned a plain string (double-encoded) — unwrap and retry
+                if (typeof parsed === 'string') {
+                    console.info('[QR-DEBUG] JSON.parse devolveu string (double-encoded) — a re-tentar com o valor interno:', parsed.trim());
+                    value = parsed.trim();
+                    continue;
+                }
+
+                // JSON.parse returned an object — only "token" is accepted
+                if (parsed && typeof parsed === 'object') {
+                    console.info('[QR-DEBUG] JSON.parse devolveu objeto:', parsed);
+                    if (parsed.token && typeof parsed.token === 'string') {
+                        const resultado = parsed.token.trim();
+                        console.info('[QR-DEBUG] Campo "token" encontrado:', resultado);
+                        console.groupEnd();
+                        return resultado;
+                    }
+                    // Object exists but has no "token" field — reject, do not fall back
+                    console.error('[QR-DEBUG] ❌ Objeto JSON sem campo "token" — formato inválido. Campos presentes:', Object.keys(parsed));
+                    console.groupEnd();
+                    return null;
+                }
+
+                break;
+            }
+
+            console.info('[QR-DEBUG] Resultado final (token extraído):', value, '| length:', value.length);
+            console.groupEnd();
+            return value;
+        }
+
+        // [QR-DEBUG] ─── B. Leitura/scan do QR ────────────────────────────────
+        async function onScanSuccess(decodedText) {
+            if (scannerPausado) return;
+            scannerPausado = true;
+
+            console.group('[QR-DEBUG] onScanSuccess() — QR lido pela câmara');
+            console.info('[QR-DEBUG] Conteúdo bruto lido:', decodedText);
+            console.info('[QR-DEBUG] typeof decodedText:', typeof decodedText, '| length:', (decodedText != null ? decodedText.length : 'N/A'));
+            console.info('[QR-DEBUG] Estado UI → scannerPausado = true');
+
+            // Pause the scanner so it stops processing frames
+            try { await html5Qrcode.pause(true); } catch(e) {
+                console.warn('[QR-DEBUG] Aviso: html5Qrcode.pause() falhou:', e);
+            }
+
+            mostrarBanner('paused', 'QR lido — a validar…');
+
+            // Normalise the scanned payload into the token string expected by the API.
+            // Returns null if the QR is a JSON object without a "token" field.
+            const codigoFinal = normalizeQrToken(decodedText);
+
+            // [QR-DEBUG] ─── B. Comparação bruto vs. normalizado ──────────────
+            console.info('[QR-DEBUG] Conteúdo normalizado (após parse):', codigoFinal);
+
+            if (codigoFinal === null) {
+                console.error('[QR-DEBUG] ❌ normalizeQrToken devolveu null — QR com formato inválido (JSON sem campo "token")');
+                console.groupEnd();
+                mostrarBanner('error', 'QR inválido — formato não reconhecido.');
+                scannerPausado = false;
+                return;
+            }
+
+            if (decodedText !== codigoFinal) {
+                console.info('[QR-DEBUG] ℹ️ Transformação aplicada:');
+                console.info('[QR-DEBUG]   Antes (raw):', JSON.stringify(decodedText));
+                console.info('[QR-DEBUG]   Depois (normalizado):', JSON.stringify(codigoFinal));
+            } else {
+                console.info('[QR-DEBUG] Sem transformação — raw === normalizado');
+            }
+
+            // Feed the extracted token to the manual input and run validation
+            document.getElementById('qr-input').value = codigoFinal;
+            console.info('[QR-DEBUG] A chamar verificar() com o token normalizado');
+            console.groupEnd();
+            await verificar();
+        }
+
+        // ── Manual section toggle ─────────────────────────────────────────────
+        function toggleManual() {
+            const btn   = document.getElementById('manual-toggle');
+            const panel = document.getElementById('manual-panel');
+            const open  = btn.getAttribute('aria-expanded') === 'true';
+            btn.setAttribute('aria-expanded', String(!open));
+            panel.style.display = open ? 'none' : 'flex';
+            if (!open) document.getElementById('qr-input').focus();
+        }
+
+        // [QR-DEBUG] ─── C. Chamada à API de validação ────────────────────────
+        async function verificar() {
+            const input  = document.getElementById('qr-input');
+            const codigo = input.value.trim();
+
+            console.group('[QR-DEBUG] verificar()');
+            console.info('[QR-DEBUG] Estado UI → loading');
+            console.info('[QR-DEBUG] Código obtido do input (após trim):', JSON.stringify(codigo));
+            console.info('[QR-DEBUG] typeof codigo:', typeof codigo, '| length:', codigo.length);
+
+            if (!codigo) {
+                console.warn('[QR-DEBUG] ⚠️ Código vazio — a abortar verificação');
+                console.groupEnd();
+                input.focus();
+                return;
+            }
+
+            const btn = document.getElementById('btn-verificar');
+            btn.disabled = true;
+            btn.textContent = '…';
+
+            // Validar seleção de coroa — obrigatória
+            const coroaId = document.getElementById('coroa-contexto')?.value || '';
+            if (!coroaId) {
+                console.warn('[QR-DEBUG] ⚠️ Coroa não selecionada — a abortar verificação');
+                console.groupEnd();
+                btn.disabled = false;
+                btn.textContent = 'Verificar';
+                mostrarBanner('error', 'Selecione uma coroa/zona antes de validar.');
+                return;
+            }
+
+            // [QR-DEBUG] ─── C. Detalhe da chamada HTTP ────────────────────────
+            const codigoEncoded = encodeURIComponent(codigo);
+            // 1.ª tentativa: apenas coroaId — linhaId vem da alocação do motorista no backend
+            const urlValidar = `${API}/api/validar/qr/${codigoEncoded}?coroaId=${encodeURIComponent(coroaId)}`;
+            const t0 = Date.now();
+
+            console.info('[QR-DEBUG] Código antes de encodeURIComponent:', JSON.stringify(codigo));
+            console.info('[QR-DEBUG] Código após encodeURIComponent:', codigoEncoded);
+            console.info('[QR-DEBUG] coroaId selecionado:', coroaId);
+            // TODO[QR-DEBUG]: possible root cause — se o token contiver chars especiais (+, /, =) encodeURIComponent pode alterar o valor que chega ao backend
+            if (codigo !== decodeURIComponent(codigoEncoded)) {
+                console.warn('[QR-DEBUG] ⚠️ encodeURIComponent alterou o token!');
+                console.warn('[QR-DEBUG]   Original:', codigo);
+                console.warn('[QR-DEBUG]   Encoded:', codigoEncoded);
+                console.warn('[QR-DEBUG]   Decoded de volta:', decodeURIComponent(codigoEncoded));
+            }
+            console.info('[QR-DEBUG] Método: GET | URL completa:', urlValidar);
+            console.info('[QR-DEBUG] Hora de início (local):', new Date().toISOString());
+
+            try {
+                const res  = await fetch(urlValidar, { credentials: 'include' });
+                const duracao = Date.now() - t0;
+                console.info('[QR-DEBUG] Resposta HTTP status:', res.status, res.statusText, '| duração:', duracao + 'ms');
+
+                let data;
+                try {
+                    data = await res.json();
+                    console.info('[QR-DEBUG] Corpo da resposta (raw JSON):', data);
+                } catch (parseErr) {
+                    console.error('[QR-DEBUG] ❌ Falha ao fazer JSON.parse da resposta:', parseErr);
+                    console.error('[QR-DEBUG] Contexto: URL=', urlValidar, '| status=', res.status);
+                    throw parseErr;
+                }
+
+                if (res.status === 422 && data && data.requiresLinhaManual) {
+                    // Backend não conseguiu inferir linha — mostrar fallback manual
+                    console.info('[QR-DEBUG] requiresLinhaManual=true — a mostrar fallback de linha');
+                    console.groupEnd();
+                    mostrarFallbackLinha();
+                } else if (!res.ok) {
+                    // Erro HTTP — não é resposta funcional de validação
+                    console.warn('[QR-DEBUG] ⚠️ Erro HTTP', res.status, '— a chamar mostrarErroHttp()');
+                    console.groupEnd();
+                    mostrarErroHttp(res.status, data);
+                } else {
+                    console.groupEnd(); // fecha grupo verificar antes de entrar em mostrarResultado
+                    mostrarResultado(data);
+                }
+            } catch(e) {
+                const duracao = Date.now() - t0;
+                console.error('[QR-DEBUG] ❌ Erro de rede/CORS/timeout em verificar():', e);
+                console.error('[QR-DEBUG]   URL:', urlValidar);
+                console.error('[QR-DEBUG]   Duração até erro:', duracao + 'ms');
+                console.error('[QR-DEBUG]   Tipo de erro:', e.constructor?.name, '| Mensagem:', e.message);
+                console.groupEnd();
+                mostrarErroRede();
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Verificar';
+            }
+        }
+
+        // ── Mostrar bloco de fallback de linha (backend pediu seleção manual) ──
+        function mostrarFallbackLinha() {
+            const bloco = document.getElementById('fallback-linha');
+            if (bloco) bloco.style.display = '';
+            carregarLinhasFallback();
+            mostrarBanner('paused', 'Selecione a linha manualmente e volte a validar.');
+            // Mostrar empty state (não mostrar resultado antigo)
+            document.getElementById('resultado-card').style.display = 'none';
+            document.getElementById('estado-vazio').style.display = '';
+            document.getElementById('btn-novo').style.display = '';
+        }
+
+        // ── Reenvio com fallback de linha ─────────────────────────────────────
+        async function verificarComFallback() {
+            const codigo = document.getElementById('qr-input').value.trim();
+            const coroaId = document.getElementById('coroa-contexto')?.value || '';
+            const linhaId = document.getElementById('linha-fallback')?.value || '';
+
+            if (!codigo) {
+                mostrarBanner('error', 'Código QR em falta — leia novamente o QR.');
+                return;
+            }
+            if (!coroaId) {
+                mostrarBanner('error', 'Selecione uma coroa/zona antes de validar.');
+                return;
+            }
+            if (!linhaId) {
+                mostrarBanner('error', 'Selecione uma linha antes de reenviar.');
+                return;
+            }
+
+            const btn = document.getElementById('btn-reenviar');
+            btn.disabled = true;
+            btn.textContent = '…';
+
+            const codigoEncoded = encodeURIComponent(codigo);
+            // 2.ª tentativa: coroaId + linhaId (fallback manual)
+            const urlFallback = `${API}/api/validar/qr/${codigoEncoded}?coroaId=${encodeURIComponent(coroaId)}&linhaId=${encodeURIComponent(linhaId)}`;
+
+            console.info('[QR-DEBUG] verificarComFallback() | URL:', urlFallback);
+
+            try {
+                const res  = await fetch(urlFallback, { credentials: 'include' });
+                let data;
+                try { data = await res.json(); } catch(e) { throw e; }
+
+                console.info('[QR-DEBUG] Resposta fallback:', res.status, data);
+
+                if (!res.ok) {
+                    mostrarErroHttp(res.status, data);
+                } else {
+                    // Esconder bloco de fallback após sucesso/insucesso funcional
+                    document.getElementById('fallback-linha').style.display = 'none';
+                    mostrarResultado(data);
+                }
+            } catch(e) {
+                console.error('[QR-DEBUG] Erro no fallback:', e);
+                mostrarErroRede();
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Validar com esta linha';
+            }
+        }
+
+        // [QR-DEBUG] ─── B/C. Apresentação do resultado da validação ──────────
+        function mostrarResultado(data) {
+            console.group('[QR-DEBUG] mostrarResultado() — resposta do backend');
+
+            // [QR-DEBUG] ─── C. Resposta completa da API ────────────────────────
+            console.info('[QR-DEBUG] data.valido:', data.valido, '(type:', typeof data.valido + ')');
+            console.info('[QR-DEBUG] data.motivoRejeicao:', data.motivoRejeicao, '(type:', typeof data.motivoRejeicao + ')');
+            console.info('[QR-DEBUG] data.mensagem:', data.mensagem);
+            console.info('[QR-DEBUG] data.tipoDocumento:', data.tipoDocumento);
+            console.info('[QR-DEBUG] data.estadoOperacional:', data.estadoOperacional);
+            console.info('[QR-DEBUG] data.nomeTitular:', data.nomeTitular);
+            console.info('[QR-DEBUG] data.tipoPasseNome:', data.tipoPasseNome);
+            console.info('[QR-DEBUG] data.coroaNome:', data.coroaNome);
+            console.info('[QR-DEBUG] data.dataInicio:', data.dataInicio, '| data.dataFim:', data.dataFim);
+
+            // [QR-DEBUG] ─── D. Validação temporal (se existir) ─────────────────
+            if (data.dataInicio || data.dataFim) {
+                const agora = new Date();
+                const inicio = data.dataInicio ? new Date(data.dataInicio) : null;
+                const fim    = data.dataFim    ? new Date(data.dataFim)    : null;
+                console.group('[QR-DEBUG] Validação temporal (cliente-side)');
+                console.info('[QR-DEBUG] Agora (cliente):', agora.toISOString(), '| timezone offset (min):', agora.getTimezoneOffset());
+                if (inicio) {
+                    console.info('[QR-DEBUG] dataInicio parseada:', inicio.toISOString(), '| parseado ok?', !isNaN(inicio.getTime()));
+                    console.info('[QR-DEBUG] Agora >= dataInicio?', agora >= inicio);
+                }
+                if (fim) {
+                    const diffMs = fim - agora;
+                    console.info('[QR-DEBUG] dataFim parseada:', fim.toISOString(), '| parseado ok?', !isNaN(fim.getTime()));
+                    console.info('[QR-DEBUG] QR expirado (Now > dataFim)?', agora > fim, '| diff (ms):', diffMs);
+                }
+                console.groupEnd();
+            }
+
+            // [QR-DEBUG] ─── E. Diagnóstico do campo motivoRejeicao ─────────────
+            if (!data.valido) {
+                const motivoLabel = MOTIVO_LABELS[data.motivoRejeicao] || data.motivoRejeicao || '(motivo não fornecido)';
+                const estadoLabel = ESTADO_LABELS[data.estadoOperacional] || data.estadoOperacional || '(estado não fornecido)';
+                // TODO[QR-DEBUG]: possible root cause — analisar o motivoRejeicao abaixo para identificar a falha real
+                console.group('[QR-DEBUG] ❌ Estado INVALIDO — razão concreta');
+                console.error('[QR-DEBUG] motivoRejeicao (enum):', data.motivoRejeicao);
+                console.error('[QR-DEBUG] motivoRejeicao (label PT):', motivoLabel);
+                console.error('[QR-DEBUG] estadoOperacional:', data.estadoOperacional, '— label:', estadoLabel);
+                console.error('[QR-DEBUG] mensagem do backend:', data.mensagem);
+                // Diagnóstico por razão:
+                if (data.motivoRejeicao === 'TOKEN_NAO_ENCONTRADO') {
+                    console.error('[QR-DEBUG] 🔍 O token não foi encontrado em passe_qr_tokens nem em transacoes.codigo_qr. Verifique se o token enviado corresponde exatamente ao guardado na BD.');
+                } else if (data.motivoRejeicao === 'TOKEN_EXPIRADO') {
+                    console.error('[QR-DEBUG] 🔍 O token está expirado. O QR foi gerado mas já passou o tempo de validade.');
+                } else if (data.motivoRejeicao === 'TOKEN_REVOGADO') {
+                    console.error('[QR-DEBUG] 🔍 O token foi revogado explicitamente (revogadoEm != null).');
+                } else if (data.motivoRejeicao === 'PASSE_INATIVO') {
+                    console.error('[QR-DEBUG] 🔍 Passe inativo (pagamento pendente).');
+                } else if (data.motivoRejeicao === 'PASSE_EXPIRADO' || data.motivoRejeicao === 'PASSE_NAO_INICIADO') {
+                    console.error('[QR-DEBUG] 🔍 Passe expirado ou ainda não iniciado. Verifique dataInicio/dataFim.');
+                }
+                console.groupEnd();
+            } else {
+                console.info('[QR-DEBUG] ✅ Estado VALIDO — a apresentar resultado positivo');
+            }
+
+            document.getElementById('estado-vazio').style.display = 'none';
+            document.getElementById('btn-novo').style.display = '';
+
+            const card    = document.getElementById('resultado-card');
+            const icon    = document.getElementById('res-icon');
+            const label   = document.getElementById('res-label');
+            const msg     = document.getElementById('res-msg');
+            const details = document.getElementById('res-details');
+
+            card.style.display = '';
+
+            // ── Passo 1: erro no próprio QR → mostrar "QR Inválido" e terminar ──
+            const TOKEN_ERROS = ['TOKEN_REVOGADO', 'TOKEN_EXPIRADO', 'TOKEN_NAO_ENCONTRADO'];
+            if (TOKEN_ERROS.includes(data.motivoRejeicao)) {
+                card.className  = 'vqr-result vqr-result--invalid';
+                icon.className  = 'vqr-status-icon vqr-status-icon--invalid';
+                icon.innerHTML  = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>';
+                label.className = 'vqr-status-label vqr-status-label--invalid';
+                label.textContent = data.motivoRejeicao === 'TOKEN_NAO_ENCONTRADO'
+                    ? 'QR Não Reconhecido' : 'Código QR Inválido';
+                msg.textContent = MOTIVO_LABELS[data.motivoRejeicao] || 'Código QR inválido ou expirado.';
+                details.style.display = 'none';
+                if (scannerPausado) mostrarBanner('error', label.textContent);
+                console.info('[QR-DEBUG] Erro no próprio QR — a terminar sem mostrar detalhes do documento');
+                console.groupEnd();
+                return;
+            }
+
+            const isBilhete = data.tipoDocumento === 'BILHETE';
+            const isPasse   = data.tipoDocumento === 'PASSE';
+            const tipoLabel = isBilhete ? 'Bilhete' : isPasse ? 'Passe' : (data.tipoDocumento ? data.tipoDocumento : 'Documento');
+
+            // [QR-DEBUG] ─── B. Transição de estado na UI ─────────────────────
+            console.info('[QR-DEBUG] Estado UI →', data.valido ? 'valid' : 'invalid', '| tipoLabel:', tipoLabel);
+
+            if (data.valido) {
+                card.className  = 'vqr-result vqr-result--valid';
+                icon.className  = 'vqr-status-icon vqr-status-icon--valid';
+                icon.innerHTML  = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1aa855" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+                label.className = 'vqr-status-label vqr-status-label--valid';
+                label.textContent = `${tipoLabel} Válido`;
+            } else {
+                card.className  = 'vqr-result vqr-result--invalid';
+                icon.className  = 'vqr-status-icon vqr-status-icon--invalid';
+                icon.innerHTML  = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+                label.className = 'vqr-status-label vqr-status-label--invalid';
+                label.textContent = `${tipoLabel} Inválido`;
+            }
+
+            // Mensagem de motivo de rejeição
+            if (!data.valido && data.motivoRejeicao) {
+                msg.textContent = data.mensagem || MOTIVO_LABELS[data.motivoRejeicao] || data.motivoRejeicao;
+            } else {
+                msg.textContent = data.mensagem || '';
+            }
+
+            // ── Passo 3: preencher detalhes do documento ──────────────────────────
+            details.style.display = '';
+
+            // Foto + nome do titular (apenas para passes)
+            const fotoWrap = document.getElementById('res-foto-wrap');
+            const fotoImg  = document.getElementById('res-foto-img');
+            const fotoPh   = document.getElementById('res-foto-ph');
+            const fotoNome = document.getElementById('res-foto-nome');
+            const rowTitular = document.getElementById('res-titular-row');
+
+            rowTitular.style.display = 'none'; // nome do titular mostrado na secção de foto
+
+            if (isPasse && data.nomeTitular) {
+                fotoNome.textContent = data.nomeTitular;
+                if (data.temFotoPasse && data.fotoTitularUrl) {
+                    fotoImg.src = data.fotoTitularUrl;
+                    fotoImg.style.display = 'block';
+                    fotoPh.style.display = 'none';
+                } else {
+                    fotoImg.src = '';
+                    fotoImg.style.display = 'none';
+                    fotoPh.style.display = 'flex';
+                }
+                fotoWrap.style.display = '';
+            } else {
+                fotoWrap.style.display = 'none';
+            }
+
+            // Tipo (nome do passe ou bilhete)
+            document.getElementById('res-tipo').textContent = data.tipoPasseNome || tipoLabel;
+
+            // Zona / Coroa (coroa do título, ex: "Coroa 2")
+            document.getElementById('res-coroa').textContent = data.coroaNome || '—';
+
+            // Coroa validada (a coroa que o motorista selecionou e que foi usada na validação)
+            const rowCoroaValidada = document.getElementById('res-coroa-validada-row');
+            const elCoroaValidada  = document.getElementById('res-coroa-validada');
+            if (data.coroaValidada && String(data.coroaValidada).trim()) {
+                elCoroaValidada.textContent = data.coroaValidada;
+                rowCoroaValidada.style.display = '';
+            } else {
+                rowCoroaValidada.style.display = 'none';
+            }
+
+            // Linha usada (inferida da alocação ou escolhida no fallback)
+            const rowLinhaAlocada = document.getElementById('res-linha-alocada-row');
+            const elLinhaAlocada  = document.getElementById('res-linha-alocada');
+            if (data.linhaAlocada && String(data.linhaAlocada).trim()) {
+                elLinhaAlocada.textContent = data.linhaAlocada;
+                rowLinhaAlocada.style.display = '';
+            } else {
+                rowLinhaAlocada.style.display = 'none';
+            }
+
+            // Válido de: só para PASSE
+            const rowInicio = document.getElementById('res-inicio').closest('.vqr-detail-row');
+            if (isPasse && data.dataInicio) {
+                rowInicio.style.display = '';
+                document.getElementById('res-inicio').textContent = formatData(data.dataInicio);
+            } else {
+                rowInicio.style.display = 'none';
+            }
+
+            // Válido até
+            document.getElementById('res-fim').textContent = formatData(data.dataFim) || '—';
+
+            // Estado operacional
+            document.getElementById('res-estado').textContent =
+                ESTADO_LABELS[data.estadoOperacional] || data.estadoOperacional || '—';
+
+            // Esconder bloco de fallback de linha ao mostrar resultado definitivo
+            const blocoFallback = document.getElementById('fallback-linha');
+            if (blocoFallback) blocoFallback.style.display = 'none';
+
+            // Update scanner banner to reflect scan result
+            if (scannerPausado) {
+                mostrarBanner(
+                    data.valido ? 'active' : 'error',
+                    data.valido ? 'Validação bem-sucedida' : 'Documento inválido'
+                );
+            }
+
+            console.groupEnd(); // fecha grupo mostrarResultado
+        }
+
+        // [QR-DEBUG] ─── C. Erro de rede ─────────────────────────────────────
+        function mostrarErroRede() {
+            console.group('[QR-DEBUG] mostrarErroRede() — estado UI → erro de rede');
+            console.error('[QR-DEBUG] Não foi possível contactar o servidor.');
+            console.error('[QR-DEBUG] Causas possíveis: sem ligação, CORS bloqueado, timeout, backend em baixo.');
+            console.error('[QR-DEBUG] URL base API:', typeof API !== 'undefined' ? API || '(relativo, sem prefixo)' : '(indefinida)');
+            console.groupEnd();
+
+            document.getElementById('estado-vazio').style.display = 'none';
+            document.getElementById('btn-novo').style.display = '';
+
+            const card = document.getElementById('resultado-card');
+            card.style.display = '';
+            card.className = 'vqr-result vqr-result--invalid';
+
+            const icon = document.getElementById('res-icon');
+            icon.className = 'vqr-status-icon vqr-status-icon--invalid';
+            icon.innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>';
+            document.getElementById('res-label').className   = 'vqr-status-label vqr-status-label--invalid';
+            document.getElementById('res-label').textContent = 'Erro de ligação';
+            document.getElementById('res-msg').textContent   = 'Não foi possível contactar o servidor. Verifique a ligação.';
+            document.getElementById('res-details').style.display = 'none';
+        }
+
+        // [QR-DEBUG] ─── C. Erro HTTP (401, 404, 422, 500, …) ───────────────────
+        function mostrarErroHttp(status, data) {
+            console.group('[QR-DEBUG] mostrarErroHttp() — erro HTTP', status);
+            console.warn('[QR-DEBUG] Resposta de erro do servidor:', data);
+            console.groupEnd();
+
+            const mensagemServidor = (data && data.message) ? data.message : null;
+
+            let titulo, descricao;
+            if (status === 401) {
+                titulo    = 'Não autenticado';
+                descricao = mensagemServidor || 'O servidor requer autenticação para este endpoint.';
+            } else if (status === 403) {
+                titulo    = 'Acesso negado';
+                descricao = mensagemServidor || 'Sem permissão para aceder a este recurso.';
+            } else if (status === 404) {
+                titulo    = 'Não encontrado';
+                descricao = mensagemServidor || 'Endpoint não encontrado.';
+            } else if (status === 422) {
+                titulo    = 'Pedido inválido';
+                descricao = mensagemServidor || 'O servidor não conseguiu processar o pedido.';
+            } else if (status >= 500) {
+                titulo    = 'Erro interno do servidor';
+                descricao = mensagemServidor || 'Ocorreu um erro no servidor. Tente novamente.';
+            } else {
+                titulo    = `Erro ${status}`;
+                descricao = mensagemServidor || 'Resposta inesperada do servidor.';
+            }
+
+            document.getElementById('estado-vazio').style.display = 'none';
+            document.getElementById('btn-novo').style.display = '';
+
+            const card = document.getElementById('resultado-card');
+            card.style.display = '';
+            card.className = 'vqr-result vqr-result--invalid';
+
+            const icon = document.getElementById('res-icon');
+            icon.className = 'vqr-status-icon vqr-status-icon--invalid';
+            icon.innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>';
+            document.getElementById('res-label').className   = 'vqr-status-label vqr-status-label--invalid';
+            document.getElementById('res-label').textContent = titulo;
+            document.getElementById('res-msg').textContent   = descricao;
+            document.getElementById('res-details').style.display = 'none';
+
+            if (scannerPausado) {
+                mostrarBanner('error', titulo);
+            }
+        }
+
+        function novaVerificacao() {
+            document.getElementById('qr-input').value = '';
+            document.getElementById('resultado-card').style.display = 'none';
+            document.getElementById('estado-vazio').style.display = '';
+            document.getElementById('btn-novo').style.display = 'none';
+            scannerPausado = false;
+
+            // Limpar e esconder bloco de fallback de linha
+            const blocoFallback = document.getElementById('fallback-linha');
+            if (blocoFallback) blocoFallback.style.display = 'none';
+            const selectFallback = document.getElementById('linha-fallback');
+            if (selectFallback) selectFallback.value = '';
+
+            // If stream is running, resume it; otherwise show the start button again
+            if (scannerAtivo && html5Qrcode) {
+                try { html5Qrcode.resume(); } catch(e) {}
+                mostrarBanner('active', 'Câmara ativa — aponte para um código QR');
+            } else {
+                // Show the start button so the user triggers getUserMedia again
+                const btn = document.getElementById('btn-iniciar-camara');
+                btn.style.display = 'flex';
+                btn.disabled = false;
+                btn.innerHTML = [
+                    '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">',
+                    '<path d="M23 7l-7 5 7 5V7z"></path>',
+                    '<rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>',
+                    '</svg> Ativar Câmara'
+                ].join('');
+                document.getElementById('camera-viewport').style.display = 'none';
+                document.getElementById('scanner-banner').style.display = 'none';
+            }
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            }[char]));
+        }
+
+        function logout() {
+            fetch(`${API}/api/logout`, { method: 'POST', credentials: 'include' }).catch(() => {});
+            ['nomeCompleto', 'perfil', 'role', 'idCliente', 'estatuto', 'estatutoAutomatico',
+             'dataNascimento', 'morada', 'nif', 'telefone', 'cc'].forEach(k => localStorage.removeItem(k));
+            window.location.href = 'index.html';
+        }
+
+        // Allow pressing Enter in the manual input
+        document.getElementById('qr-input').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') verificar();
+        });
+
+        // Stop the stream if the user navigates away (prevents camera lock)
+        window.addEventListener('pagehide', function () {
+            if (scannerAtivo && html5Qrcode) {
+                html5Qrcode.stop().catch(() => {});
+            }
+        });
+    </script>
+</body>
+</html>

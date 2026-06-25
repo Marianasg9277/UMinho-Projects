@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>TUB – Preçário</title>
+    <meta name="description" content="Consulte os preços dos bilhetes e passes TUB.">
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#0f8bb5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="TUB">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="subpage.css">
+    <style>
+        /* ── Acordeão por estatuto (secção Passes) ── */
+        .prec-accordion {
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+        }
+        .prec-accordion:last-child { border-bottom: none; }
+
+        .prec-accordion-btn {
+            width: 100%; display: flex; align-items: center; justify-content: space-between;
+            gap: 8px; background: none; border: none;
+            padding: 13px 0; font-size: 0.92rem; font-weight: 700; color: #1a1a2e;
+            font-family: 'Inter', sans-serif; cursor: pointer; text-align: left;
+            transition: color 0.18s;
+        }
+        .prec-accordion-btn:hover { color: var(--tub-blue, #00a2e8); }
+
+        .prec-chevron { flex-shrink: 0; transition: transform 0.22s; }
+        .prec-accordion-btn.active .prec-chevron { transform: rotate(180deg); }
+
+        .prec-accordion-body { padding-bottom: 8px; }
+        .prec-accordion-body .sp-price-table { margin-top: 0; }
+    </style>
+</head>
+<body>
+    <div class="bg-shape shape1"></div>
+    <div class="bg-shape shape2"></div>
+
+    <header class="sp-header">
+        <a href="index.html" class="sp-back-btn" aria-label="Voltar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+        </a>
+        <h1 class="sp-page-title">Preçário</h1>
+        <div class="sp-header-right"></div>
+    </header>
+
+    <main class="kf-main">
+
+        <!-- Bilhetes Avulso -->
+        <section class="sp-card" id="section-bilhetes">
+            <h2 class="sp-section-title">Bilhetes Avulso</h2>
+            <table class="sp-price-table">
+                <thead><tr><th>Tipo</th><th>Preço</th></tr></thead>
+                <tbody id="tbody-bilhetes">
+                    <tr><td colspan="2" style="text-align:center;color:#94a3b8;">A carregar…</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Passes por Estatuto -->
+        <section class="sp-card" id="section-passes">
+            <h2 class="sp-section-title">Passes</h2>
+            <div id="passes-container">
+                <p style="text-align:center;color:#94a3b8;padding:12px 0;">A carregar…</p>
+            </div>
+        </section>
+
+        <p class="sp-footnote">* Preços sujeitos a alteração. Apresente comprovativo de estatuto quando solicitado.</p>
+
+    </main>
+
+    <nav class="kf-bottom-nav" aria-label="Navegação principal">
+        <a href="index.html" class="kf-nav-item" id="nav-inicio">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            <span>Início</span>
+        </a>
+        <a href="carteira.html" class="kf-nav-item" id="nav-carteira">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="5" width="20" height="14" rx="2"/>
+                <path d="M16 12h4v4h-4a2 2 0 0 1 0-4z"/>
+            </svg>
+            <span>Carteira</span>
+        </a>
+        <a href="pagamentos.html" class="kf-nav-item" id="nav-pagamentos">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                <line x1="1" y1="10" x2="23" y2="10"></line>
+            </svg>
+            <span>Pagamentos</span>
+        </a>
+        <a href="perfil.html" class="kf-nav-item" id="nav-perfil">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span>Perfil</span>
+        </a>
+    </nav>
+
+    <script>
+        const API_BASE = '';
+
+        function formatPreco(v) {
+            return parseFloat(v).toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+        }
+
+        function toggleAccordion(btn) {
+            const body = btn.nextElementSibling;
+            const isOpen = btn.classList.contains('active');
+            btn.classList.toggle('active', !isOpen);
+            body.style.display = isOpen ? 'none' : '';
+        }
+
+        // ── Bilhetes ─────────────────────────────────────────────────────────────
+
+        async function carregarBilhetes() {
+            const tbody = document.getElementById('tbody-bilhetes');
+            try {
+                const res = await fetch(`${API_BASE}/api/precario`);
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const tipos = await res.json();
+
+                const avulso = tipos.filter(t => t.categoria === 'AVULSO');
+
+                if (!avulso.length) {
+                    tbody.innerHTML = '<tr><td colspan="2" style="text-align:center;color:#94a3b8;">Sem bilhetes disponíveis.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = avulso.map(t => `
+                    <tr>
+                        <td>${t.nome}</td>
+                        <td class="sp-price-val">${formatPreco(t.preco)}</td>
+                    </tr>
+                `).join('');
+            } catch (e) {
+                console.error('[Preçário] Erro ao carregar bilhetes:', e);
+                tbody.innerHTML = '<tr><td colspan="2" style="text-align:center;color:#ef4444;">Erro ao carregar bilhetes.</td></tr>';
+            }
+        }
+
+        // ── Passes por estatuto ───────────────────────────────────────────────────
+
+        async function carregarPasses() {
+            const container = document.getElementById('passes-container');
+            try {
+                const res = await fetch(`${API_BASE}/api/publico/precos-passes`);
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const regras = await res.json();
+
+                if (!regras.length) {
+                    container.innerHTML = '<p style="text-align:center;color:#94a3b8;padding:12px 0;">Sem passes disponíveis.</p>';
+                    return;
+                }
+
+                // Agrupar por estatuto, preservando a ordem devolvida pela API
+                const grupos = [];
+                const seen = {};
+                for (const r of regras) {
+                    if (!seen[r.tipoEstatuto]) {
+                        seen[r.tipoEstatuto] = true;
+                        grupos.push({ key: r.tipoEstatuto, label: r.estatutoLabel, regras: [] });
+                    }
+                    grupos.find(g => g.key === r.tipoEstatuto).regras.push(r);
+                }
+
+                // Ordenar estatutos: Sem Estatuto primeiro, depois ordem definida
+                const ORDEM_ESTATUTOS = ['SEM_ESTATUTO', 'CRIANCA', 'ESTUDANTE', 'SENIOR', 'RESIDENTE', 'INCAPACITADO', 'MILITAR'];
+                grupos.sort((a, b) => {
+                    const ia = ORDEM_ESTATUTOS.indexOf(a.key);
+                    const ib = ORDEM_ESTATUTOS.indexOf(b.key);
+                    return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+                });
+
+                container.innerHTML = grupos.map((grupo, idx) => {
+                    const isFirst = idx === 0;
+                    const rows = grupo.regras.map(r => `
+                        <tr>
+                            <td>
+                                ${r.tipoPasseNome}
+                                <small style="color:#9ca3af;font-size:0.74rem;margin-left:4px;">(${r.duracaoDias} dias)</small>
+                            </td>
+                            <td>${r.coroaNome}</td>
+                            <td class="sp-price-val">${formatPreco(r.preco)}</td>
+                        </tr>
+                    `).join('');
+
+                    return `
+                        <div class="prec-accordion">
+                            <button class="prec-accordion-btn${isFirst ? ' active' : ''}"
+                                    onclick="toggleAccordion(this)"
+                                    aria-expanded="${isFirst}">
+                                ${grupo.label}
+                                <svg class="prec-chevron" width="16" height="16" viewBox="0 0 24 24"
+                                     fill="none" stroke="currentColor" stroke-width="2.5"
+                                     stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </button>
+                            <div class="prec-accordion-body"${isFirst ? '' : ' style="display:none;"'}>
+                                <table class="sp-price-table">
+                                    <thead>
+                                        <tr><th>Tipo de Passe</th><th>Zona</th><th>Preço</th></tr>
+                                    </thead>
+                                    <tbody>${rows}</tbody>
+                                </table>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (e) {
+                console.error('[Preçário] Erro ao carregar passes:', e);
+                container.innerHTML = '<p style="text-align:center;color:#ef4444;padding:12px 0;">Erro ao carregar preçário de passes.</p>';
+            }
+        }
+
+        // ── Init — as duas cargas são independentes ───────────────────────────────
+
+        document.addEventListener('DOMContentLoaded', () => {
+            carregarBilhetes();
+            carregarPasses();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>TUB - Perfil do Utilizador</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#0f8bb5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="TUB">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="subpage.css">
+    <style>
+        .profile-avatar {
+            width: 64px; height: 64px;
+            background: rgba(0,162,232,0.1);
+            border: 2px solid var(--tub-blue);
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            margin: 0 auto 10px;
+        }
+        .role-badge {
+            display: inline-block; padding: 3px 12px; border-radius: 20px;
+            font-size: 0.78rem; font-weight: 700; letter-spacing: 0.05em;
+        }
+        .role-badge--admin   { background: rgba(255,200,0,0.2); color: #b8860b; }
+        .role-badge--cliente { background: rgba(0,162,232,0.12); color: var(--tub-nav); }
+        .info-group { margin-bottom: 13px; padding-bottom: 13px; border-bottom: 1px solid rgba(0,0,0,0.05); }
+        .info-group:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+        .info-label { font-size: 0.78rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 3px; font-weight: 700; }
+        .info-value { font-size: 0.95rem; color: var(--text-dark); font-weight: 500; }
+        .estatuto-row {
+            display: flex; align-items: center; gap: 12px;
+            background: rgba(0,162,232,0.05); border-radius: 14px;
+            padding: 14px; margin-bottom: 12px;
+        }
+        .estatuto-badge {
+            display: inline-block; padding: 4px 12px; border-radius: 20px;
+            font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em;
+            background: rgba(0,162,232,0.12); color: var(--tub-nav);
+        }
+        .btn-pedir-estatuto {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 12px 16px; border-radius: 14px;
+            background: rgba(0,162,232,0.08); border: 1px solid rgba(0,162,232,0.2);
+            font-size: 0.85rem; font-weight: 600; color: var(--tub-dark-blue);
+            text-decoration: none; transition: all 0.22s;
+            width: 100%; box-sizing: border-box;
+        }
+        .btn-pedir-estatuto:hover { background: rgba(0,162,232,0.15); }
+        .pedido-hist-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 9px 0; border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+        .pedido-hist-item:last-child { border-bottom: none; }
+        .pedido-hist-label { flex: 1; }
+        .pedido-hist-tipo { font-size: 0.85rem; font-weight: 600; color: var(--text-dark); }
+        .pedido-hist-data { font-size: 0.72rem; color: #9ca3af; margin-top: 2px; }
+        .pedido-hist-badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; white-space: nowrap; }
+        .pedido-hist-badge--pending  { background: rgba(255,149,0,0.14); color: #c8760a; }
+        .pedido-hist-badge--approved { background: rgba(52,199,89,0.12); color: #1a8a3a; }
+        .pedido-hist-badge--rejected { background: rgba(255,59,48,0.12); color: #c0392b; }
+        .pedido-hist-badge--draft    { background: rgba(142,142,147,0.1); color: #555; }
+        .pedido-hist-badge--review   { background: rgba(175,82,222,0.1); color: #7217a9; }
+        .action-row {
+            display: flex; align-items: center; gap: 12px;
+            padding: 13px 0; border-bottom: 1px solid rgba(0,0,0,0.05);
+            text-decoration: none; color: var(--text-dark); transition: opacity 0.15s;
+        }
+        .action-row:hover { opacity: 0.7; }
+        .action-row-icon {
+            width: 36px; height: 36px; border-radius: 10px;
+            background: rgba(0,162,232,0.10); color: #0077b6;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .action-row-label { flex: 1; font-size: 0.92rem; font-weight: 600; }
+        .btn-logout {
+            width: 100%; padding: 14px; border-radius: 20px;
+            background: rgba(230,0,0,0.08); color: #e60000;
+            border: 1px solid rgba(230,0,0,0.2);
+            font-size: 0.92rem; font-weight: 600; cursor: pointer;
+            margin-top: 14px; margin-bottom: 0; transition: background 0.2s;
+        }
+        .btn-logout:hover { background: rgba(230,0,0,0.15); }
+        .btn-backoffice {
+            display: block; text-align: center; padding: 12px;
+            background: rgba(255,200,0,0.1); border: 1px solid rgba(255,200,0,0.3);
+            border-radius: 14px; color: #b8860b; font-weight: 700;
+            text-decoration: none; font-size: 0.9rem; margin-top: 10px;
+            transition: background 0.2s;
+        }
+        .btn-backoffice:hover { background: rgba(255,200,0,0.2); }
+        .btn-edit-profile {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            width: 100%; margin-top: 16px; margin-bottom: 0;
+            padding: 12px 16px; border-radius: 14px;
+            background: var(--tub-blue); color: #fff; border: none;
+            font-size: 0.9rem; font-weight: 700; cursor: pointer;
+            box-shadow: 0 4px 14px rgba(0,162,232,0.28);
+        }
+        .btn-edit-profile:hover { background: var(--tub-dark-blue); transform: translateY(-1px); }
+        .profile-modal-overlay[hidden] { display: none !important; }
+        .profile-modal-overlay {
+            position: fixed; inset: 0; z-index: 1200;
+            display: flex; align-items: center; justify-content: center;
+            padding: 18px; background: rgba(0,0,0,0.42);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+        }
+        .profile-modal {
+            width: 100%; max-width: 440px; max-height: calc(100dvh - 36px);
+            overflow-y: auto; background: rgba(255,255,255,0.92);
+            border: 1px solid rgba(255,255,255,0.72);
+            border-radius: 20px; padding: 22px;
+            box-shadow: 0 18px 42px rgba(0,0,0,0.22);
+        }
+        .profile-modal-header {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 12px; margin-bottom: 18px;
+        }
+        .profile-modal-title {
+            font-size: 1rem; font-weight: 800; color: #1a1a2e;
+        }
+        .profile-modal-close {
+            width: 36px; height: 36px; padding: 0; margin: 0;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 12px; background: rgba(0,0,0,0.05);
+            color: #6b7280; border: none;
+        }
+        .profile-form-group { margin-bottom: 13px; }
+        .profile-form-group label {
+            display: block; font-size: 0.78rem; color: #6b7280;
+            text-transform: uppercase; letter-spacing: 0.06em;
+            margin-bottom: 6px; font-weight: 700;
+        }
+        .profile-form-group input {
+            width: 100%; padding: 12px 14px; border-radius: 12px;
+            border: 1px solid rgba(0,0,0,0.08);
+            background: rgba(255,255,255,0.72);
+            color: #1a1a2e; font-size: 0.95rem; outline: none;
+        }
+        .profile-form-group input:focus {
+            border-color: var(--tub-blue);
+            box-shadow: 0 0 0 3px rgba(0,162,232,0.15);
+        }
+        .profile-readonly {
+            margin: 16px 0; padding: 14px; border-radius: 14px;
+            background: rgba(0,162,232,0.06);
+            border: 1px solid rgba(0,162,232,0.12);
+        }
+        .profile-readonly-row {
+            display: flex; justify-content: space-between; gap: 12px;
+            font-size: 0.82rem; padding: 5px 0; color: #374151;
+        }
+        .profile-readonly-row strong { color: #6b7280; }
+        .profile-readonly-note {
+            font-size: 0.75rem; color: #6b7280; margin-top: 8px;
+        }
+        .profile-modal-actions {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+        }
+        .profile-modal-actions button { margin: 0; border-radius: 14px; }
+        .btn-save-profile { background: var(--tub-blue); color: #fff; }
+        .btn-cancel-profile {
+            background: rgba(107,114,128,0.12); color: #374151;
+            border: 1px solid rgba(107,114,128,0.16);
+        }
+        @media (max-width: 360px) {
+            .profile-modal { padding: 18px; border-radius: 18px; }
+            .profile-modal-actions { grid-template-columns: 1fr; }
+        }
+        /* ── Separação entre cards do perfil ── */
+        #main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        /* ── Foto no avatar do topo ── */
+        .pf-top-avatar-img {
+            width: 100%; height: 100%;
+            border-radius: 50%; object-fit: cover; display: block;
+        }
+
+        /* ── Fotografia do Passe ── */
+        .foto-passe-preview {
+            width: 96px; height: 96px;
+            border-radius: 50%; object-fit: cover;
+            border: 2.5px solid var(--tub-blue);
+            display: block;
+        }
+        .foto-passe-placeholder {
+            width: 96px; height: 96px; border-radius: 50%;
+            background: rgba(0,162,232,0.08);
+            border: 2.5px dashed rgba(0,162,232,0.35);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .btn-escolher-foto {
+            padding: 9px 14px; border-radius: 11px;
+            background: rgba(0,162,232,0.08); border: 1px solid rgba(0,162,232,0.2);
+            font-size: 0.82rem; font-weight: 600; color: var(--tub-dark-blue);
+            cursor: pointer; white-space: nowrap; transition: background 0.2s;
+        }
+        .btn-escolher-foto:hover { background: rgba(0,162,232,0.14); }
+        .btn-guardar-foto {
+            width: 100%; padding: 12px; border-radius: 14px;
+            background: var(--tub-blue); color: #fff; border: none;
+            font-size: 0.9rem; font-weight: 700; cursor: pointer;
+            box-shadow: 0 4px 14px rgba(0,162,232,0.28); transition: background 0.2s;
+        }
+        .btn-guardar-foto:hover:not(:disabled) { background: var(--tub-dark-blue); }
+        .btn-guardar-foto:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-remover-foto {
+            width: 100%; padding: 11px; border-radius: 14px;
+            background: rgba(239,68,68,0.08); color: #dc2626;
+            border: 1px solid rgba(239,68,68,0.2);
+            font-size: 0.88rem; font-weight: 600; cursor: pointer;
+            transition: background 0.2s; margin-top: 8px;
+        }
+        .btn-remover-foto:hover:not(:disabled) { background: rgba(239,68,68,0.15); }
+        .btn-remover-foto:disabled { opacity: 0.6; cursor: not-allowed; }
+        .foto-erro { font-size: 0.78rem; color: #ef4444; margin-top: 6px; }
+    </style>
+</head>
+<body>
+<script src="session-guard.js"></script>
+<div class="bg-shape shape1"></div>
+<div class="bg-shape shape2"></div>
+
+<header class="sp-header">
+    <a href="index.html" class="sp-back-btn" aria-label="Início">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+    </a>
+    <h1 class="sp-page-title">Perfil</h1>
+    <div class="sp-header-right"></div>
+</header>
+
+<main class="kf-main">
+    <!-- Auth required -->
+    <div id="auth-required" class="sp-card" style="display:none;text-align:center;">
+        <div style="width:56px;height:56px;border-radius:18px;background:rgba(0,162,232,0.1);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#00a2e8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+        </div>
+        <p style="color:#1a1a2e;font-size:1rem;font-weight:700;margin-bottom:6px;">Sess&atilde;o n&atilde;o iniciada</p>
+        <p style="color:#6b7280;font-size:0.85rem;margin-bottom:20px;line-height:1.5;">Para aceder ao teu perfil precisas de iniciar sess&atilde;o na tua conta TUB.</p>
+        <a href="index.html" class="sp-cta-btn" style="text-decoration:none;display:inline-flex;gap:8px;align-items:center;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+                <polyline points="10 17 15 12 10 7"></polyline>
+                <line x1="15" y1="12" x2="3" y2="12"></line>
+            </svg>
+            Iniciar sess&atilde;o
+        </a>
+    </div>
+
+    <div id="main-content" style="display:none;">
+
+        <!-- Card 1: Dados Pessoais -->
+        <div class="sp-card">
+            <div style="text-align:center;margin-bottom:20px;">
+                <div class="profile-avatar">
+                    <svg id="pf-top-avatar-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--tub-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <img id="pf-top-avatar-img" class="pf-top-avatar-img" style="display:none;" alt="Foto de perfil">
+                </div>
+                <p style="font-size:1rem;font-weight:700;color:#1a1a2e;margin:0 0 6px;">A tua Conta</p>
+                <div id="role-badge-wrapper"></div>
+            </div>
+            <h2 class="sp-section-title">Dados Pessoais</h2>
+            <div class="info-group"><div class="info-label">Nome</div><div class="info-value" id="nome">A carregar…</div></div>
+            <div class="info-group"><div class="info-label">Data de Nascimento</div><div class="info-value" id="dataNascimento">A carregar…</div></div>
+            <div class="info-group"><div class="info-label">Morada</div><div class="info-value" id="morada">A carregar…</div></div>
+            <div class="info-group"><div class="info-label">NIF</div><div class="info-value" id="nif">A carregar…</div></div>
+            <div class="info-group"><div class="info-label">Telefone</div><div class="info-value" id="telefone">A carregar…</div></div>
+            <div class="info-group"><div class="info-label">Cart&atilde;o de Cidad&atilde;o</div><div class="info-value" id="cc">A carregar…</div></div>
+            <button class="btn-edit-profile" type="button" onclick="abrirModalEdicao()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+                Editar Dados
+            </button>
+        </div>
+
+        <!-- Card 2: Fotografia do Passe -->
+        <div class="sp-card">
+            <h2 class="sp-section-title">Fotografia do Passe</h2>
+            <div style="text-align:center;margin-bottom:18px;">
+                <div style="width:96px;height:96px;margin:0 auto 10px;">
+                    <img id="foto-preview-img" class="foto-passe-preview" style="display:none;" alt="Fotografia do passe">
+                    <div id="foto-placeholder" class="foto-passe-placeholder">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(0,162,232,0.5)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                    </div>
+                </div>
+                <p id="foto-estado-texto" style="font-size:0.78rem;color:#9ca3af;margin:0;">Sem fotografia</p>
+            </div>
+            <input type="file" id="foto-input" accept="image/jpeg,image/png" style="display:none" onchange="atualizarNomeFoto()">
+            <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+                <button type="button" class="btn-escolher-foto" onclick="document.getElementById('foto-input').click()">Escolher imagem</button>
+                <span id="foto-nome" style="font-size:0.82rem;color:#6b7280;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Nenhum ficheiro</span>
+            </div>
+            <p id="foto-erro" class="foto-erro" style="display:none;"></p>
+            <button type="button" class="btn-guardar-foto" id="btn-guardar-foto" onclick="guardarFotoPasse()" style="margin-top:10px;">
+                Guardar fotografia
+            </button>
+            <button type="button" class="btn-remover-foto" id="btn-remover-foto" onclick="removerFotoPasse()" style="display:none;">
+                Remover fotografia
+            </button>
+        </div>
+
+        <!-- Card 3: Estatuto -->
+        <div class="sp-card">
+            <h2 class="sp-section-title">Estatuto</h2>
+            <div class="estatuto-row">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0077b6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                </svg>
+                <div style="flex:1;">
+                    <div style="font-size:0.78rem;color:#6b7280;font-weight:600;margin-bottom:4px;">Perfil atual</div>
+                    <span class="estatuto-badge" id="estatuto-label">A carregar…</span>
+                </div>
+            </div>
+            <a href="pedir_estatuto.html" class="btn-pedir-estatuto">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                Pedir / Alterar Estatuto
+            </a>
+            <div id="pedidos-historico-wrapper" style="margin-top:18px;">
+                <div style="font-size:0.82rem;font-weight:700;color:#6b7280;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.05em;">Hist&oacute;rico de Pedidos</div>
+                <div id="pedidos-historico-lista">
+                    <p style="font-size:0.82rem;color:#9ca3af;">A carregar…</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 3: Ações -->
+        <div class="sp-card">
+            <h2 class="sp-section-title">A&ccedil;&otilde;es</h2>
+            <a href="historico_viagens.html" class="action-row">
+                <div class="action-row-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                </div>
+                <span class="action-row-label">Hist&oacute;rico de viagens</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+            </a>
+            <a href="metodos_pagamento.html" class="action-row">
+                <div class="action-row-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                        <line x1="1" y1="10" x2="23" y2="10"></line>
+                    </svg>
+                </div>
+                <span class="action-row-label">M&eacute;todos de pagamento</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+            </a>
+            <button class="btn-logout" onclick="logout()">Terminar sess&atilde;o</button>
+            <div id="admin-link-wrapper" style="display:none;">
+                <a href="backoffice.html" class="btn-backoffice">Aceder ao Backoffice</a>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<div id="modal-editar-dados" class="profile-modal-overlay" hidden onclick="fecharModalEdicao(event)">
+    <div class="profile-modal" role="dialog" aria-modal="true" aria-labelledby="editar-dados-title" onclick="event.stopPropagation()">
+        <div class="profile-modal-header">
+            <h2 class="profile-modal-title" id="editar-dados-title">Editar Dados Pessoais</h2>
+            <button type="button" class="profile-modal-close" onclick="fecharModalEdicao()" aria-label="Fechar">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+        <form id="form-editar-dados">
+            <div class="profile-form-group">
+                <label for="edit-nome">Nome</label>
+                <input type="text" id="edit-nome" required minlength="2" maxlength="80" autocomplete="given-name">
+            </div>
+            <div class="profile-form-group">
+                <label for="edit-sobrenome">Sobrenome</label>
+                <input type="text" id="edit-sobrenome" required minlength="2" maxlength="80" autocomplete="family-name">
+            </div>
+            <div class="profile-form-group">
+                <label for="edit-morada">Morada</label>
+                <input type="text" id="edit-morada" required minlength="5" maxlength="200" autocomplete="street-address">
+            </div>
+            <div class="profile-form-group">
+                <label for="edit-telefone">Telefone</label>
+                <input type="tel" id="edit-telefone" pattern="[0-9]{9}" inputmode="numeric" maxlength="9" required autocomplete="tel">
+            </div>
+
+            <div class="profile-readonly">
+                <div class="profile-readonly-row"><strong>Data de Nascimento</strong><span id="edit-dataNascimento">-</span></div>
+                <div class="profile-readonly-row"><strong>NIF</strong><span id="edit-nif">-</span></div>
+                <div class="profile-readonly-row"><strong>Cart&atilde;o de Cidad&atilde;o</strong><span id="edit-cc">-</span></div>
+                <p class="profile-readonly-note">Estes dados n&atilde;o podem ser alterados.</p>
+            </div>
+
+            <div class="profile-modal-actions">
+                <button type="submit" class="btn-save-profile">Guardar</button>
+                <button type="button" class="btn-cancel-profile" onclick="fecharModalEdicao()">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Bottom nav -->
+<nav class="kf-bottom-nav" aria-label="Navegação principal">
+    <a href="index.html" class="kf-nav-item" id="nav-inicio">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </svg>
+        <span>Início</span>
+    </a>
+    <a href="carteira.html" class="kf-nav-item" id="nav-carteira">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="5" width="20" height="14" rx="2"/>
+            <path d="M16 12h4v4h-4a2 2 0 0 1 0-4z"/>
+        </svg>
+        <span>Carteira</span>
+    </a>
+    <a href="pagamentos.html" class="kf-nav-item" id="nav-pagamentos">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+            <line x1="1" y1="10" x2="23" y2="10"></line>
+        </svg>
+        <span>Pagamentos</span>
+    </a>
+    <a href="perfil.html" class="kf-nav-item kf-nav-item--active" id="nav-perfil" aria-current="page">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+        <span>Perfil</span>
+    </a>
+</nav>
+
+<script>
+    const API = '';
+    let dadosClienteAtual = null;
+
+    function limparSessaoLocal() {
+        ['nomeCompleto','nome','sobrenome','perfil','role','idCliente','estatuto','estatutoAutomatico',
+         'dataNascimento','morada','nif','telefone','cc'].forEach(k => localStorage.removeItem(k));
+    }
+
+    function mostrarAuthRequiredPerfil() {
+        document.getElementById('main-content').style.display = 'none';
+        document.getElementById('auth-required').style.display = '';
+    }
+
+    function mostrarConteudoPerfil() {
+        document.getElementById('main-content').style.display = '';
+        document.getElementById('auth-required').style.display = 'none';
+    }
+
+    function preencherBadgeRole(role) {
+        const badgeWrapper = document.getElementById('role-badge-wrapper');
+        if (role === 'ADMIN') {
+            badgeWrapper.innerHTML = '<span class="role-badge role-badge--admin">ADMIN</span>';
+            document.getElementById('admin-link-wrapper').style.display = 'block';
+        } else {
+            badgeWrapper.innerHTML = '<span class="role-badge role-badge--cliente">CLIENTE</span>';
+            document.getElementById('admin-link-wrapper').style.display = 'none';
+        }
+    }
+
+    function preencherPerfil(d) {
+        dadosClienteAtual = d || {};
+        document.getElementById('nome').innerText = d.nomeCompleto || '—';
+        if (d.dataNascimento) {
+            try { document.getElementById('dataNascimento').innerText = new Date(d.dataNascimento).toLocaleDateString('pt-PT'); }
+            catch(e) { document.getElementById('dataNascimento').innerText = d.dataNascimento; }
+        } else {
+            document.getElementById('dataNascimento').innerText = '—';
+        }
+        document.getElementById('morada').innerText = d.morada || '—';
+        document.getElementById('nif').innerText = d.nif || '—';
+        document.getElementById('telefone').innerText = d.telefone || '—';
+        document.getElementById('cc').innerText = d.numeroCartaoCidadao || '—';
+
+        if (d.nomeCompleto) localStorage.setItem('nomeCompleto', d.nomeCompleto);
+        if (d.perfil) localStorage.setItem('perfil', d.perfil);
+        if (d.role) localStorage.setItem('role', d.role);
+        if (d.idCliente) localStorage.setItem('idCliente', String(d.idCliente));
+
+        atualizarPreviewFoto(d);
+    }
+
+    function abrirModalEdicao() {
+        const d = dadosClienteAtual || {};
+        document.getElementById('edit-nome').value = d.nome || '';
+        document.getElementById('edit-sobrenome').value = d.sobrenome || '';
+        document.getElementById('edit-morada').value = d.morada || '';
+        document.getElementById('edit-telefone').value = d.telefone || '';
+        document.getElementById('edit-dataNascimento').textContent = d.dataNascimento
+            ? new Date(d.dataNascimento).toLocaleDateString('pt-PT')
+            : '-';
+        document.getElementById('edit-nif').textContent = d.nif || '-';
+        document.getElementById('edit-cc').textContent = d.numeroCartaoCidadao || '-';
+        document.getElementById('modal-editar-dados').hidden = false;
+        document.body.style.overflow = 'hidden';
+        document.getElementById('edit-nome').focus();
+    }
+
+    function fecharModalEdicao(event) {
+        if (event && event.target !== document.getElementById('modal-editar-dados')) return;
+        document.getElementById('modal-editar-dados').hidden = true;
+        document.body.style.overflow = '';
+    }
+
+    function mostrarToastPerfil(mensagem, tipo = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `tub-toast tub-toast--${tipo}`;
+        toast.textContent = mensagem;
+        document.body.appendChild(toast);
+        requestAnimationFrame(() => toast.classList.add('tub-toast--visible'));
+        setTimeout(() => {
+            toast.classList.remove('tub-toast--visible');
+            setTimeout(() => toast.remove(), 350);
+        }, 2600);
+    }
+
+    async function submeterEdicaoDados(event) {
+        event.preventDefault();
+        const form = event.target;
+        if (!form.reportValidity()) return;
+
+        const dados = {
+            nome: document.getElementById('edit-nome').value.trim(),
+            sobrenome: document.getElementById('edit-sobrenome').value.trim(),
+            morada: document.getElementById('edit-morada').value.trim(),
+            telefone: document.getElementById('edit-telefone').value.trim()
+        };
+
+        if (!/^\d{9}$/.test(dados.telefone)) {
+            const tel = document.getElementById('edit-telefone');
+            tel.setCustomValidity('O telefone deve ter exatamente 9 digitos.');
+            tel.reportValidity();
+            tel.setCustomValidity('');
+            return;
+        }
+
+        const submitBtn = form.querySelector('.btn-save-profile');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'A guardar...';
+
+        try {
+            const response = await fetch(`${API}/api/cliente/atualizar-dados`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify(dados)
+            });
+            const result = await response.json().catch(() => ({}));
+
+            if (!response.ok) {
+                throw new Error(result.message || 'Erro ao atualizar dados.');
+            }
+
+            preencherPerfil(result);
+            fecharModalEdicao();
+            mostrarToastPerfil('Dados atualizados com sucesso.', 'success');
+        } catch (error) {
+            mostrarToastPerfil(error.message || 'Erro ao comunicar com o servidor.', 'error');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Guardar';
+        }
+    }
+
+    const ESTATUTO_LABELS = {
+        'SEM_ESTATUTO': 'Normal',
+        'ESTUDANTE':    'Estudante',
+        'RESIDENTE':    'Residente',
+        'SENIOR':       'Sénior',
+        'MILITAR':      'Militar',
+        'CRIANCA':      'Criança',
+        'INCAPACITADO': 'Incapacitado'
+    };
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        document.getElementById('form-editar-dados').addEventListener('submit', submeterEdicaoDados);
+
+        const nomeCompleto = localStorage.getItem('nomeCompleto');
+        if (!nomeCompleto) {
+            mostrarAuthRequiredPerfil();
+            return;
+        }
+
+        if (localStorage.getItem('role') === 'MOTORISTA') {
+            window.location.replace('perfil_motorista.html');
+            return;
+        }
+
+        const estatuto = localStorage.getItem('estatuto') || 'SEM_ESTATUTO';
+        document.getElementById('estatuto-label').textContent =
+            ESTATUTO_LABELS[estatuto] || estatuto;
+
+        try {
+            const res = await fetch(`${API}/api/cliente/dados`, { credentials: 'include' });
+            if (res.status === 401 || res.status === 403) {
+                limparSessaoLocal();
+                mostrarAuthRequiredPerfil();
+                return;
+            }
+            if (!res.ok) throw new Error();
+
+            const data = await res.json();
+            preencherBadgeRole(data.role || localStorage.getItem('role'));
+            preencherPerfil(data);
+            mostrarConteudoPerfil();
+        } catch (e) {
+            limparSessaoLocal();
+            mostrarAuthRequiredPerfil();
+            return;
+        }
+
+        carregarHistoricoPedidos();
+    });
+
+    async function carregarHistoricoPedidos() {
+        const lista = document.getElementById('pedidos-historico-lista');
+        const ESTADO_LABEL = {
+            'DRAFT': 'Rascunho', 'PENDING_APPROVAL': 'Aguarda revisão',
+            'UNDER_REVIEW': 'Em análise', 'APPROVED': 'Aprovado',
+            'REJECTED': 'Rejeitado', 'CANCELLED': 'Cancelado',
+            'CORRECTION_REQUESTED': 'Correção pedida'
+        };
+        const ESTADO_CLS = {
+            'DRAFT': 'draft', 'PENDING_APPROVAL': 'pending', 'UNDER_REVIEW': 'review',
+            'APPROVED': 'approved', 'REJECTED': 'rejected',
+            'CANCELLED': 'draft', 'CORRECTION_REQUESTED': 'review'
+        };
+        try {
+            const res = await fetch(`${API}/api/user/estatuto/pedidos`, { credentials: 'include' });
+            if (res.status === 401 || res.status === 403) {
+                limparSessaoLocal();
+                mostrarAuthRequiredPerfil();
+                return;
+            }
+            if (!res.ok) throw new Error();
+            const pedidos = await res.json();
+            if (!pedidos.length) {
+                lista.innerHTML = '<p style="font-size:0.82rem;color:#9ca3af;">Sem pedidos de estatuto.</p>';
+                return;
+            }
+            lista.innerHTML = pedidos.map(p => {
+                const cls = ESTADO_CLS[p.estado] || 'draft';
+                const label = ESTADO_LABEL[p.estado] || p.estado;
+                const tipoLabel = ESTATUTO_LABELS[p.tipoEstatuto] || p.tipoEstatuto;
+                const data = p.criadoEm ? new Date(p.criadoEm).toLocaleDateString('pt-PT') : '–';
+                return `
+                    <div class="pedido-hist-item">
+                        <div class="pedido-hist-label">
+                            <div class="pedido-hist-tipo">${tipoLabel}</div>
+                            <div class="pedido-hist-data">${data}</div>
+                        </div>
+                        <span class="pedido-hist-badge pedido-hist-badge--${cls}">${label}</span>
+                    </div>
+                `;
+            }).join('');
+        } catch(e) {
+            lista.innerHTML = '<p style="font-size:0.82rem;color:#9ca3af;">Sem pedidos de estatuto.</p>';
+        }
+    }
+
+    // ── Fotografia do Passe ──────────────────────────────────────────────────
+
+    function atualizarPreviewFoto(d) {
+        const img = document.getElementById('foto-preview-img');
+        const placeholder = document.getElementById('foto-placeholder');
+        const estadoTexto = document.getElementById('foto-estado-texto');
+        const btnRemover = document.getElementById('btn-remover-foto');
+        const topImg  = document.getElementById('pf-top-avatar-img');
+        const topIcon = document.getElementById('pf-top-avatar-icon');
+        if (!img) return;
+
+        if (d && d.temFotoPasse && d.fotoPasseUrl) {
+            const src = d.fotoPasseUrl + '?t=' + Date.now();
+            img.src = src;
+            img.style.display = 'block';
+            placeholder.style.display = 'none';
+            estadoTexto.textContent = 'Fotografia ativa';
+            estadoTexto.style.color = '#1a8a3a';
+            if (btnRemover) btnRemover.style.display = '';
+            if (topImg)  { topImg.src = src; topImg.style.display = 'block'; }
+            if (topIcon) topIcon.style.display = 'none';
+        } else {
+            img.src = '';
+            img.style.display = 'none';
+            placeholder.style.display = 'flex';
+            estadoTexto.textContent = 'Sem fotografia';
+            estadoTexto.style.color = '#9ca3af';
+            if (btnRemover) btnRemover.style.display = 'none';
+            if (topImg)  { topImg.src = ''; topImg.style.display = 'none'; }
+            if (topIcon) topIcon.style.display = '';
+        }
+    }
+
+    async function removerFotoPasse() {
+        if (!confirm('Tens a certeza que queres remover a fotografia do passe?')) return;
+
+        const btn = document.getElementById('btn-remover-foto');
+        btn.disabled = true;
+        btn.textContent = 'A remover…';
+
+        try {
+            const res = await fetch(`${API}/api/cliente/foto-passe`, {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+            const data = await res.json().catch(() => ({}));
+
+            if (!res.ok) {
+                throw new Error(data.message || 'Erro ao remover fotografia.');
+            }
+
+            atualizarPreviewFoto({ temFotoPasse: false });
+            mostrarToastPerfil('Fotografia removida com sucesso.', 'success');
+        } catch (e) {
+            mostrarToastPerfil(e.message || 'Erro ao comunicar com o servidor.', 'error');
+            btn.disabled = false;
+            btn.textContent = 'Remover fotografia';
+        }
+    }
+
+    function atualizarNomeFoto() {
+        const input = document.getElementById('foto-input');
+        const nomeEl = document.getElementById('foto-nome');
+        const erroEl = document.getElementById('foto-erro');
+        erroEl.style.display = 'none';
+
+        if (!input.files || !input.files[0]) {
+            nomeEl.textContent = 'Nenhum ficheiro';
+            return;
+        }
+        const file = input.files[0];
+        nomeEl.textContent = file.name;
+
+        if (file.size > 5 * 1024 * 1024) {
+            erroEl.textContent = 'O ficheiro excede o limite de 5 MB.';
+            erroEl.style.display = 'block';
+        }
+    }
+
+    async function guardarFotoPasse() {
+        const input = document.getElementById('foto-input');
+        const erroEl = document.getElementById('foto-erro');
+        const btn = document.getElementById('btn-guardar-foto');
+        erroEl.style.display = 'none';
+
+        if (!input.files || !input.files[0]) {
+            erroEl.textContent = 'Escolhe um ficheiro antes de guardar.';
+            erroEl.style.display = 'block';
+            return;
+        }
+
+        const file = input.files[0];
+
+        if (file.size > 5 * 1024 * 1024) {
+            erroEl.textContent = 'O ficheiro excede o limite de 5 MB.';
+            erroEl.style.display = 'block';
+            return;
+        }
+
+        if (!['image/jpeg', 'image/png'].includes(file.type)) {
+            erroEl.textContent = 'Apenas imagens JPEG ou PNG são aceites.';
+            erroEl.style.display = 'block';
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('foto', file);
+
+        btn.disabled = true;
+        btn.textContent = 'A guardar…';
+
+        try {
+            const res = await fetch(`${API}/api/cliente/foto-passe`, {
+                method: 'POST',
+                credentials: 'include',
+                body: formData
+            });
+            const data = await res.json().catch(() => ({}));
+
+            if (!res.ok) {
+                throw new Error(data.message || 'Erro ao guardar fotografia.');
+            }
+
+            atualizarPreviewFoto({ temFotoPasse: true, fotoPasseUrl: '/api/cliente/foto-passe' });
+            input.value = '';
+            document.getElementById('foto-nome').textContent = 'Nenhum ficheiro';
+            mostrarToastPerfil('Fotografia atualizada com sucesso.', 'success');
+        } catch (e) {
+            erroEl.textContent = e.message || 'Erro ao comunicar com o servidor.';
+            erroEl.style.display = 'block';
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Guardar fotografia';
+        }
+    }
+
+    function logout() {
+        fetch(`${API}/api/logout`, { method: 'POST', credentials: 'include' }).catch(() => {});
+        ['nomeCompleto','nome','sobrenome','perfil','role','idCliente','estatuto','estatutoAutomatico',
+         'dataNascimento','morada','nif','telefone','cc'].forEach(k => localStorage.removeItem(k));
+        setTimeout(() => { window.location.href = 'index.html'; }, 150);
+    }
+</script>
+</body>
+</html>

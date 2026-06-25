@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>TUB – Pedir Estatuto</title>
+    <meta name="description" content="Solicita o teu estatuto TUB para beneficiares de passes e tarifas especiais.">
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#0f8bb5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="TUB">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="subpage.css">
+    <style>
+        /* ── Layout ── */
+        .pe-wrapper {
+            max-width: 580px;
+            margin: 0 auto;
+            padding: 24px 18px calc(90px + env(safe-area-inset-bottom, 0px));
+        }
+
+        /* ── Progress Steps ── */
+        .step-bar {
+            display: flex; align-items: center; gap: 0;
+            margin-bottom: 28px; padding: 0 4px;
+        }
+        .step-item {
+            display: flex; flex-direction: column; align-items: center;
+            flex: 1; position: relative;
+        }
+        .step-circle {
+            width: 36px; height: 36px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.82rem; font-weight: 800;
+            transition: all 0.35s cubic-bezier(.4,0,.2,1);
+            border: 2.5px solid rgba(255,255,255,0.4);
+            background: rgba(255,255,255,0.2); color: rgba(255,255,255,0.6);
+            position: relative; z-index: 2;
+        }
+        .step-circle.active   { background: #fff; color: var(--tub-nav); border-color: #fff; box-shadow: 0 0 0 4px rgba(255,255,255,0.25); }
+        .step-circle.done     { background: rgba(52,199,89,0.9); color: #fff; border-color: transparent; }
+        .step-label {
+            font-size: 0.68rem; font-weight: 600;
+            color: rgba(255,255,255,0.55); margin-top: 5px;
+            text-align: center; white-space: nowrap;
+            transition: color 0.3s;
+        }
+        .step-label.active { color: rgba(255,255,255,0.95); }
+        .step-connector {
+            height: 2.5px; flex: 1; background: rgba(255,255,255,0.2);
+            margin: 0; position: relative; top: -14px;
+            transition: background 0.35s;
+        }
+        .step-connector.done { background: rgba(52,199,89,0.7); }
+
+        /* ── Section card ── */
+        .pe-card {
+            background: rgba(255,255,255,0.88);
+            border-radius: 24px;
+            padding: 28px 24px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            animation: fadeUp 0.35s ease both;
+        }
+        @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+
+        .pe-section-title { font-size: 1.15rem; font-weight: 800; color: #1a1a2e; margin-bottom: 6px; }
+        .pe-section-sub   { font-size: 0.82rem; color: #9ca3af; margin-bottom: 22px; line-height: 1.5; }
+
+        /* ── Estatuto Cards ── */
+        .estatuto-grid {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 10px; margin-bottom: 20px;
+        }
+        @media (max-width: 400px) { .estatuto-grid { grid-template-columns: 1fr; } }
+
+        .est-card {
+            border: 2px solid rgba(0,119,182,0.12);
+            border-radius: 16px; padding: 14px 12px;
+            cursor: pointer; transition: all 0.22s;
+            background: rgba(255,255,255,0.6); position: relative;
+            text-align: left; display: flex; flex-direction: column; gap: 8px;
+        }
+        .est-card:hover { border-color: var(--tub-blue); background: rgba(0,162,232,0.05); transform: translateY(-2px); }
+        .est-card.selected {
+            border-color: var(--tub-nav); background: rgba(0,119,182,0.07);
+            box-shadow: 0 0 0 3px rgba(0,119,182,0.18);
+        }
+        .est-card-icon-wrap {
+            width: 40px; height: 40px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(0,119,182,0.1); color: var(--tub-nav);
+            flex-shrink: 0;
+        }
+        .est-card.selected .est-card-icon-wrap { background: var(--tub-nav); color: #fff; }
+        .est-card-nome { font-size: 0.88rem; font-weight: 700; color: #1a1a2e; }
+        .est-card-sub  { font-size: 0.72rem; color: #9ca3af; }
+        .est-card-check {
+            position: absolute; top: 10px; right: 10px;
+            width: 20px; height: 20px; border-radius: 50%;
+            background: var(--tub-nav); display: none;
+            align-items: center; justify-content: center;
+        }
+        .est-card-check svg { width: 11px; height: 11px; stroke: #fff; stroke-width: 3; }
+        .est-card.selected .est-card-check { display: flex; }
+
+        /* ── Tarifa info box ── */
+        .tarifa-box {
+            display: none; border-radius: 14px; padding: 14px 16px; margin-bottom: 16px;
+            background: rgba(0,119,182,0.06); border: 1px solid rgba(0,119,182,0.15);
+        }
+        .tarifa-box.visible { display: block; animation: fadeUp 0.25s ease both; }
+        .tarifa-box-title { font-size: 0.72rem; font-weight: 700; color: var(--tub-nav); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+        .tarifa-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem; padding: 5px 0; border-bottom: 1px solid rgba(0,0,0,0.05); }
+        .tarifa-row:last-child { border-bottom: none; }
+        .tarifa-coroa { font-weight: 600; color: #374151; }
+        .tarifa-preco { font-weight: 700; color: var(--tub-nav); }
+        .tarifa-free  { color: #1aa855; font-weight: 700; }
+        .tarifa-desconto { color: #9ca3af; font-size: 0.7rem; text-align: right; }
+
+        /* ── Req docs box ── */
+        .req-docs-box {
+            display: none; border-radius: 14px; padding: 14px 16px; margin-bottom: 16px;
+            background: rgba(255,149,0,0.05); border: 1px solid rgba(255,149,0,0.2);
+        }
+        .req-docs-box.visible { display: block; animation: fadeUp 0.25s ease both; }
+        .req-docs-title { font-size: 0.72rem; font-weight: 700; color: #c8760a; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+        .req-doc-item { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: #374151; padding: 4px 0; font-weight: 500; }
+
+        /* ── Upload zone ── */
+        .upload-zone {
+            border: 2.5px dashed rgba(0,119,182,0.3); border-radius: 18px;
+            padding: 28px 20px; text-align: center; cursor: pointer;
+            transition: all 0.22s; background: rgba(0,119,182,0.02);
+            margin-bottom: 14px;
+        }
+        .upload-zone:hover, .upload-zone.drag-over { border-color: var(--tub-blue); background: rgba(0,162,232,0.06); }
+        .upload-text { font-size: 0.9rem; font-weight: 600; color: var(--tub-nav); display: block; margin-bottom: 4px; }
+        .upload-hint { font-size: 0.75rem; color: #9ca3af; }
+        #upload-input { display: none; }
+
+        /* ── Files list ── */
+        .files-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+        .file-item {
+            display: flex; align-items: center; gap: 10px;
+            background: rgba(0,119,182,0.05); border: 1px solid rgba(0,119,182,0.12);
+            border-radius: 12px; padding: 10px 12px;
+            animation: fadeUp 0.2s ease both;
+        }
+        .file-icon { flex-shrink: 0; color: var(--tub-nav); }
+        .file-info { flex: 1; min-width: 0; }
+        .file-name { font-size: 0.82rem; font-weight: 600; color: #374151; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .file-size { font-size: 0.7rem; color: #9ca3af; margin-top: 1px; }
+        .file-status { font-size: 0.7rem; font-weight: 700; }
+        .file-status--ok  { color: #1aa855; }
+        .file-status--err { color: #e74c3c; }
+        .file-status--uploading { color: #c8760a; }
+        .file-remove { background: none; border: none; cursor: pointer; color: #ef4444; padding: 4px; border-radius: 6px; transition: all 0.2s; width: auto; margin: 0; line-height: 1; flex-shrink: 0; }
+        .file-remove:hover { background: rgba(239,68,68,0.1); }
+
+        /* ── Textarea obs ── */
+        textarea.pe-obs {
+            width: 100%; padding: 12px 14px;
+            border: 1.5px solid rgba(0,0,0,0.1); border-radius: 14px;
+            font-family: 'Inter', sans-serif; font-size: 0.9rem;
+            resize: vertical; outline: none; min-height: 76px;
+            background: rgba(255,255,255,0.8); transition: border 0.2s;
+            margin-bottom: 16px; box-sizing: border-box;
+        }
+        textarea.pe-obs:focus { border-color: var(--tub-blue); }
+
+        /* ── Buttons ── */
+        .pe-btn-primary {
+            width: 100%; padding: 15px;
+            background: linear-gradient(135deg, var(--tub-blue), var(--tub-dark-blue));
+            color: #fff; border: none; border-radius: 16px;
+            font-size: 1rem; font-weight: 700; font-family: 'Inter', sans-serif;
+            cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+            box-shadow: 0 6px 20px rgba(0,119,182,0.35); transition: all 0.25s;
+        }
+        .pe-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(0,119,182,0.4); }
+        .pe-btn-primary:disabled { opacity: 0.55; cursor: default; transform: none; box-shadow: none; }
+        .pe-btn-back {
+            background: none; border: 1.5px solid rgba(0,0,0,0.12);
+            border-radius: 14px; padding: 10px 18px;
+            font-size: 0.88rem; font-weight: 600; color: #555;
+            cursor: pointer; font-family: 'Inter', sans-serif;
+            transition: all 0.2s; width: auto; margin: 0;
+        }
+        .pe-btn-back:hover { background: rgba(0,0,0,0.04); }
+
+        /* ── Success state ── */
+        .success-state { text-align: center; padding: 16px 8px; }
+        .success-icon {
+            width: 72px; height: 72px; border-radius: 50%;
+            background: linear-gradient(135deg, #34c759, #28a745);
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 18px; box-shadow: 0 8px 24px rgba(52,199,89,0.4);
+            animation: scaleIn 0.4s cubic-bezier(.4,0,.2,1) both;
+        }
+        @keyframes scaleIn { from { transform: scale(0.5); opacity:0; } to { transform: scale(1); opacity:1; } }
+        .success-state h2 { font-size: 1.3rem; font-weight: 800; color: #1a1a2e; margin-bottom: 10px; }
+        .success-state p { font-size: 0.88rem; color: #6b7280; line-height: 1.6; }
+
+        /* ── Navbar ── */
+        .nav-extras { display: flex; align-items: center; gap: 10px; }
+        .nav-notif-btn { position: relative; width: 36px; height: 36px; background: rgba(255,255,255,0.12); border: 1.5px solid rgba(255,255,255,0.3); border-radius: 50%; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; text-decoration: none; }
+        .nav-notif-btn:hover { background: rgba(255,255,255,0.25); }
+
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="bg-shape shape1"></div>
+    <div class="bg-shape shape2"></div>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <div style="display:flex;align-items:center;gap:15px;">
+            <svg style="cursor:pointer;flex-shrink:0;" onclick="goBack()" width="26" height="26"
+                viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            <img src="imgs/logoBar.png" alt="TUB" class="nav-logo" style="cursor:pointer;margin:0;" onclick="window.location.href='index.html'">
+        </div>
+        <div class="nav-extras">
+            <a href="notificacoes.html" class="nav-notif-btn" title="Notificações">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+            </a>
+            <button class="nav-btn" onclick="logout()">Terminar sessão</button>
+        </div>
+    </nav>
+
+    <div class="pe-wrapper">
+
+        <!-- Progress bar -->
+        <div class="step-bar" id="step-bar">
+            <div class="step-item">
+                <div class="step-circle active" id="sc1">1</div>
+                <div class="step-label active" id="sl1">Estatuto</div>
+            </div>
+            <div class="step-connector" id="conn1"></div>
+            <div class="step-item">
+                <div class="step-circle" id="sc2">2</div>
+                <div class="step-label" id="sl2">Documentos</div>
+            </div>
+            <div class="step-connector" id="conn2"></div>
+            <div class="step-item">
+                <div class="step-circle" id="sc3">3</div>
+                <div class="step-label" id="sl3">Submissão</div>
+            </div>
+        </div>
+
+        <!-- STEP 1: Escolha de Estatuto -->
+        <div id="step1" class="pe-card">
+            <div class="pe-section-title">Escolhe o teu estatuto</div>
+            <div class="pe-section-sub">Seleciona o perfil que corresponde à tua situação. O preço do passe será calculado automaticamente com base no estatuto aprovado.</div>
+
+            <div class="estatuto-grid" id="estatuto-grid"></div>
+
+            <!-- Docs necessários -->
+            <div class="req-docs-box" id="req-docs-box">
+                <div class="req-docs-title">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                    Documentos necessários
+                </div>
+                <div id="req-docs-list"></div>
+            </div>
+
+            <textarea class="pe-obs" id="obs-input" placeholder="Adiciona observações (opcional)…" rows="3"></textarea>
+
+            <button class="pe-btn-primary" id="btn-step1" onclick="irParaStep2()" disabled>
+                Continuar
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+        </div>
+
+        <!-- STEP 2: Upload de documentos -->
+        <div id="step2" class="pe-card hidden">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                <button class="pe-btn-back" onclick="voltarStep1()">← Voltar</button>
+                <span id="step2-tipo-badge" style="display:inline-block;padding:4px 12px;border-radius:20px;background:rgba(0,119,182,0.08);color:var(--tub-nav);font-size:0.78rem;font-weight:700;"></span>
+            </div>
+            <div class="pe-section-title">Documentos</div>
+            <div class="pe-section-sub">Carrega os documentos necessários para a verificação do teu estatuto (PDF, JPEG ou PNG, máx. 5MB).</div>
+
+            <div class="req-docs-box visible" id="step2-req-box" style="margin-bottom:16px;">
+                <div class="req-docs-title">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                    O que precisas de enviar
+                </div>
+                <div id="step2-req-list"></div>
+            </div>
+
+            <!-- Upload zone -->
+            <div class="upload-zone" id="upload-zone"
+                onclick="document.getElementById('upload-input').click()"
+                ondragover="event.preventDefault(); this.classList.add('drag-over')"
+                ondragleave="this.classList.remove('drag-over')"
+                ondrop="handleDrop(event)">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(0,119,182,0.5)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto 10px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                <span class="upload-text">Clica para selecionar ficheiro</span>
+                <span class="upload-hint">ou arrasta para aqui · PDF, JPEG, PNG · máx. 5 MB</span>
+            </div>
+            <input type="file" id="upload-input" accept=".pdf,.jpg,.jpeg,.png" multiple onchange="handleFileSelect(event)">
+
+            <div class="files-list" id="files-list"></div>
+
+            <div id="step2-sem-docs-msg" class="hidden" style="text-align:center;font-size:0.82rem;color:#9ca3af;margin-bottom:14px;">
+                Este estatuto não requer documentos. Podes prosseguir diretamente.
+            </div>
+
+            <button class="pe-btn-primary" id="btn-step2" onclick="irParaStep3()">
+                Continuar para Submissão
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+        </div>
+
+        <!-- STEP 3: Resumo e Submissão -->
+        <div id="step3" class="pe-card hidden">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                <button class="pe-btn-back" onclick="voltarStep2()">← Voltar</button>
+                <span id="step3-tipo-badge" style="display:inline-block;padding:4px 12px;border-radius:20px;background:rgba(0,119,182,0.08);color:var(--tub-nav);font-size:0.78rem;font-weight:700;"></span>
+            </div>
+            <div class="pe-section-title">Resumo do Pedido</div>
+            <div class="pe-section-sub">Confirma os detalhes antes de submeter. Após a submissão, o pedido ficará a aguardar revisão administrativa.</div>
+
+            <div id="step3-resumo" style="display:grid;gap:10px;margin-bottom:20px;"></div>
+
+            <div style="background:rgba(0,119,182,0.06);border:1px solid rgba(0,119,182,0.15);border-radius:12px;padding:12px 14px;margin-bottom:20px;font-size:0.82rem;color:#374151;line-height:1.6;">
+                <strong>Nota:</strong> O pedido será revisto pela equipa TUB. Receberás uma notificação quando for aprovado ou rejeitado. Pode demorar até 3 dias úteis.
+            </div>
+
+            <button class="pe-btn-primary" id="btn-submeter" onclick="submeterPedido()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"></path><path d="M22 2L15 22 11 13 2 9l20-7z"></path></svg>
+                Submeter Pedido
+            </button>
+        </div>
+
+        <!-- SUCESSO -->
+        <div id="step-success" class="pe-card hidden">
+            <div class="success-state">
+                <div class="success-icon">
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+                <h2>Pedido Submetido</h2>
+                <p>O teu pedido de estatuto <strong id="success-tipo"></strong> foi submetido com sucesso e está a aguardar revisão pela equipa TUB.</p>
+                <p style="margin-top:12px;">Podes acompanhar o estado na tua <strong>página de Perfil</strong>, na secção Histórico de Pedidos.</p>
+                <div style="display:flex;flex-direction:column;gap:10px;margin-top:24px;">
+                    <button class="pe-btn-primary" onclick="window.location.href='perfil.html'">Ver Perfil</button>
+                    <button class="pe-btn-back" style="width:100%;text-align:center;" onclick="window.location.href='index.html'">Voltar ao Início</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Bottom nav -->
+    <nav class="kf-bottom-nav" aria-label="Navegação principal">
+        <a href="index.html" class="kf-nav-item">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+            <span>Início</span>
+        </a>
+        <a href="carteira.html" class="kf-nav-item">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M16 12h4v4h-4a2 2 0 0 1 0-4z"/></svg>
+            <span>Carteira</span>
+        </a>
+        <a href="pagamentos.html" class="kf-nav-item">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+            <span>Pagamentos</span>
+        </a>
+        <a href="perfil.html" class="kf-nav-item">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            <span>Perfil</span>
+        </a>
+    </nav>
+
+    <script src="session-guard.js"></script>
+    <script>
+    const API = '';
+
+    // ── SVG icons por tipo ─────────────────────────────────────────────────────
+    const ICONS = {
+        ESTUDANTE: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>`,
+        RESIDENTE: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>`,
+        SENIOR:    `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"></path></svg>`,
+        MILITAR:   `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>`,
+        INCAPACITADO: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4" r="2"></circle><path d="M19 13a7 7 0 1 1-14 0"></path><line x1="12" y1="6" x2="12" y2="13"></line><polyline points="9 13 12 16 15 13"></polyline></svg>`
+    };
+
+    // ── Dados por estatuto ─────────────────────────────────────────────────────
+    const ESTATUTOS = [
+        {
+            tipo: 'ESTUDANTE',
+            nome: 'Estudante / Menor',
+            sub: 'Universitários e menores de 18 anos',
+            docs: ['Comprovativo de inscrição escolar/universitária', 'Cópia do Documento de Identificação'],
+            tarifas: [
+                { coroa: 'Coroa 1', preco: 'Gratuito', desconto: '100% desconto' },
+                { coroa: 'Coroa 2', preco: 'Gratuito', desconto: '100% desconto' },
+                { coroa: 'Coroa 3', preco: 'Gratuito', desconto: '100% desconto' },
+            ]
+        },
+        {
+            tipo: 'RESIDENTE',
+            nome: 'Residente',
+            sub: '25% de desconto no passe',
+            docs: ['Comprovativo de morada (fatura, certidão de residência)'],
+            tarifas: [
+                { coroa: 'Coroa 1', preco: '30,00 €', desconto: '25% desconto' },
+                { coroa: 'Coroa 2', preco: '38,00 €', desconto: '24% desconto' },
+                { coroa: 'Coroa 3', preco: '45,00 €', desconto: '25% desconto' },
+            ]
+        },
+        {
+            tipo: 'SENIOR',
+            nome: 'Sénior (65+ anos)',
+            sub: '75% de desconto no passe',
+            docs: ['Cópia do Documento de Identificação (com data de nascimento)'],
+            tarifas: [
+                { coroa: 'Coroa 1', preco: '10,00 €', desconto: '75% desconto' },
+                { coroa: 'Coroa 2', preco: '12,50 €', desconto: '75% desconto' },
+                { coroa: 'Coroa 3', preco: '15,00 €', desconto: '75% desconto' },
+            ]
+        },
+        {
+            tipo: 'MILITAR',
+            nome: 'Ex-Combatente / Militar',
+            sub: 'Passe gratuito',
+            docs: ['Cédula militar ou comprovativo de ex-combatente'],
+            tarifas: [
+                { coroa: 'Coroa 1', preco: 'Gratuito', desconto: '100% desconto' },
+                { coroa: 'Coroa 2', preco: 'Gratuito', desconto: '100% desconto' },
+                { coroa: 'Coroa 3', preco: 'Gratuito', desconto: '100% desconto' },
+            ]
+        },
+        {
+            tipo: 'INCAPACITADO',
+            nome: 'Incapacitado / Acompanhante',
+            sub: 'Passe gratuito',
+            docs: ['Atestado Multiuso de Incapacidade'],
+            tarifas: [
+                { coroa: 'Coroa 1', preco: 'Gratuito', desconto: '100% desconto' },
+                { coroa: 'Coroa 2', preco: 'Gratuito', desconto: '100% desconto' },
+                { coroa: 'Coroa 3', preco: 'Gratuito', desconto: '100% desconto' },
+            ]
+        }
+    ];
+
+    let selectedEstatuto = null;
+    let pedidoId = null;
+    let uploadedFiles = [];
+    let currentStep = 1;
+
+    // ── Auth guard ─────────────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+        if (!localStorage.getItem('nomeCompleto')) { window.location.href = 'index.html'; return; }
+        renderEstatutoGrid();
+    });
+
+    function goBack() {
+        if (currentStep === 2) voltarStep1();
+        else if (currentStep === 3) voltarStep2();
+        else window.location.href = 'perfil.html';
+    }
+
+    // ── STEP 1: Grid de estatutos ──────────────────────────────────────────────
+    function renderEstatutoGrid() {
+        document.getElementById('estatuto-grid').innerHTML = ESTATUTOS.map(e => `
+            <div class="est-card" id="est-card-${e.tipo}" onclick="selecionarEstatuto('${e.tipo}')">
+                <div class="est-card-icon-wrap">${ICONS[e.tipo] || ''}</div>
+                <div>
+                    <div class="est-card-nome">${e.nome}</div>
+                    <div class="est-card-sub">${e.sub}</div>
+                </div>
+                <div class="est-card-check">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function selecionarEstatuto(tipo) {
+        selectedEstatuto = ESTATUTOS.find(e => e.tipo === tipo);
+        document.querySelectorAll('.est-card').forEach(c => c.classList.remove('selected'));
+        document.getElementById(`est-card-${tipo}`)?.classList.add('selected');
+
+        // Docs
+        const reqBox = document.getElementById('req-docs-box');
+        const reqList = document.getElementById('req-docs-list');
+        if (selectedEstatuto.docs.length > 0) {
+            reqList.innerHTML = selectedEstatuto.docs.map(d => `
+                <div class="req-doc-item">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#c8760a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    ${d}
+                </div>`).join('');
+            reqBox.classList.add('visible');
+        } else {
+            reqBox.classList.remove('visible');
+        }
+
+        document.getElementById('btn-step1').disabled = false;
+    }
+
+    // ── STEP 2 ────────────────────────────────────────────────────────────────
+    async function irParaStep2() {
+        if (!selectedEstatuto) return;
+        const btn = document.getElementById('btn-step1');
+        btn.disabled = true;
+        btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite;"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> A criar pedido…`;
+
+        try {
+            const obs = document.getElementById('obs-input').value.trim();
+            const res = await fetch(`${API}/api/user/estatuto/pedido`, {
+                method: 'POST', credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tipoEstatuto: selectedEstatuto.tipo, observacoes: obs })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Erro ao criar pedido');
+            pedidoId = data.id;
+            setStep(2);
+
+            document.getElementById('step2-tipo-badge').textContent = selectedEstatuto.nome;
+
+            const reqList = document.getElementById('step2-req-list');
+            const reqBox  = document.getElementById('step2-req-box');
+            const semDocs = document.getElementById('step2-sem-docs-msg');
+
+            if (selectedEstatuto.docs.length > 0) {
+                reqList.innerHTML = selectedEstatuto.docs.map(d => `
+                    <div class="req-doc-item">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#c8760a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        ${d}
+                    </div>`).join('');
+                reqBox.classList.remove('hidden');
+                semDocs.classList.add('hidden');
+            } else {
+                reqBox.classList.add('hidden');
+                semDocs.classList.remove('hidden');
+            }
+            uploadedFiles = [];
+            document.getElementById('files-list').innerHTML = '';
+        } catch(e) {
+            showToast('Erro: ' + e.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = `Continuar <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>`;
+        }
+    }
+
+    function voltarStep1() { setStep(1); document.getElementById('btn-step1').disabled = false; }
+
+    // ── Upload ────────────────────────────────────────────────────────────────
+    function handleFileSelect(e) { Array.from(e.target.files).forEach(f => uploadFile(f)); e.target.value = ''; }
+    function handleDrop(e) { e.preventDefault(); document.getElementById('upload-zone').classList.remove('drag-over'); Array.from(e.dataTransfer.files).forEach(f => uploadFile(f)); }
+
+    async function uploadFile(file) {
+        if (file.size > 5 * 1024 * 1024) { showToast(`"${file.name}" excede 5 MB.`, 'error'); return; }
+        if (!['application/pdf','image/jpeg','image/png'].includes(file.type)) { showToast(`"${file.name}" — formato não suportado.`, 'error'); return; }
+
+        const fObj = { file, status: 'uploading', docId: null, nome: file.name, tamanho: file.size };
+        uploadedFiles.push(fObj);
+        renderFilesList();
+
+        try {
+            const fd = new FormData(); fd.append('ficheiro', file);
+            const res = await fetch(`${API}/api/user/estatuto/pedido/${pedidoId}/documentos`, {
+                method: 'POST', credentials: 'include', body: fd
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Erro');
+            fObj.status = 'ok'; fObj.docId = data.id;
+            showToast(`"${file.name}" carregado com sucesso.`, 'success');
+        } catch(e) {
+            fObj.status = 'error';
+            showToast(`Erro ao carregar "${file.name}": ` + e.message, 'error');
+        }
+        renderFilesList();
+    }
+
+    function renderFilesList() {
+        const list = document.getElementById('files-list');
+        if (!uploadedFiles.length) { list.innerHTML = ''; return; }
+        list.innerHTML = uploadedFiles.map((f, i) => {
+            const statusEl = {
+                uploading: `<span class="file-status file-status--uploading">A carregar…</span>`,
+                ok:        `<span class="file-status file-status--ok">Enviado</span>`,
+                error:     `<span class="file-status file-status--err">Erro no envio</span>`
+            }[f.status] || '';
+            return `<div class="file-item">
+                <div class="file-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                </div>
+                <div class="file-info">
+                    <div class="file-name">${escHtml(f.nome)}</div>
+                    <div class="file-size">${formatBytes(f.tamanho)}</div>
+                    ${statusEl}
+                </div>
+                ${f.status !== 'uploading' ? `<button class="file-remove" onclick="removerFicheiro(${i})" title="Remover">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>` : ''}
+            </div>`;
+        }).join('');
+    }
+
+    function removerFicheiro(i) { uploadedFiles.splice(i, 1); renderFilesList(); }
+
+    // ── STEP 3 ────────────────────────────────────────────────────────────────
+    async function irParaStep3() {
+        if (uploadedFiles.some(f => f.status === 'uploading')) { showToast('Aguarda que todos os ficheiros terminem de carregar.', 'error'); return; }
+        if (selectedEstatuto.docs.length > 0 && uploadedFiles.filter(f => f.status === 'ok').length === 0) {
+            if (!confirm('Não carregaste nenhum documento. O pedido pode ser rejeitado.\n\nContinuar mesmo assim?')) return;
+        }
+        setStep(3);
+
+        const docsOk = uploadedFiles.filter(f => f.status === 'ok');
+        document.getElementById('step3-tipo-badge').textContent = selectedEstatuto.nome;
+        document.getElementById('step3-resumo').innerHTML = `
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                <div style="background:rgba(0,119,182,0.06);border-radius:13px;padding:12px 14px;">
+                    <div style="font-size:0.7rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Estatuto</div>
+                    <div style="font-size:0.95rem;font-weight:700;color:#1a1a2e;">${selectedEstatuto.nome}</div>
+                </div>
+                <div style="background:rgba(0,119,182,0.06);border-radius:13px;padding:12px 14px;">
+                    <div style="font-size:0.7rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Documentos</div>
+                    <div style="font-size:0.95rem;font-weight:700;color:${docsOk.length > 0 ? '#1aa855' : '#c8760a'};">${docsOk.length > 0 ? docsOk.length + ' enviado' + (docsOk.length > 1 ? 's' : '') : 'Nenhum'}</div>
+                </div>
+            </div>
+            ${docsOk.length > 0 ? `
+            <div style="background:rgba(52,199,89,0.05);border:1px solid rgba(52,199,89,0.15);border-radius:13px;padding:12px 14px;">
+                <div style="font-size:0.7rem;font-weight:700;color:#1aa855;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Documentos Enviados</div>
+                ${docsOk.map(f => `<div style="display:flex;align-items:center;gap:8px;font-size:0.82rem;color:#374151;padding:3px 0;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1aa855" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    ${escHtml(f.nome)}
+                </div>`).join('')}
+            </div>` : ''}
+            <div style="background:rgba(0,119,182,0.06);border-radius:13px;padding:12px 14px;">
+                <div style="font-size:0.7rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Tarifa Mensal (Coroa 1)</div>
+                <div style="font-size:0.95rem;font-weight:700;color:var(--tub-nav);">${selectedEstatuto.tarifas[0]?.preco || '–'}</div>
+            </div>
+        `;
+    }
+
+    function voltarStep2() { setStep(2); }
+
+    // ── Submissão ─────────────────────────────────────────────────────────────
+    async function submeterPedido() {
+        const btn = document.getElementById('btn-submeter');
+        btn.disabled = true;
+        btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite;"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> A submeter…`;
+        try {
+            const res = await fetch(`${API}/api/user/estatuto/pedido/${pedidoId}/submeter`, {
+                method: 'POST', credentials: 'include'
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Erro ao submeter');
+            document.getElementById('success-tipo').textContent = selectedEstatuto.nome;
+            setStep('success');
+        } catch(e) {
+            showToast('Erro ao submeter: ' + e.message, 'error');
+            btn.disabled = false;
+            btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"></path><path d="M22 2L15 22 11 13 2 9l20-7z"></path></svg> Submeter Pedido`;
+        }
+    }
+
+    // ── Navigation ────────────────────────────────────────────────────────────
+    function setStep(step) {
+        currentStep = step;
+        ['step1','step2','step3','step-success'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
+        if (step === 'success') { document.getElementById('step-success').classList.remove('hidden'); document.getElementById('step-bar').style.display = 'none'; return; }
+        document.getElementById(`step${step}`)?.classList.remove('hidden');
+        for (let i = 1; i <= 3; i++) {
+            const c = document.getElementById(`sc${i}`); const l = document.getElementById(`sl${i}`);
+            if (i < step)  { c.className = 'step-circle done'; c.textContent = ''; l.className = 'step-label'; }
+            if (i === step){ c.className = 'step-circle active'; c.textContent = i; l.className = 'step-label active'; }
+            if (i > step)  { c.className = 'step-circle'; c.textContent = i; l.className = 'step-label'; }
+        }
+        document.getElementById('conn1').className = 'step-connector' + (step > 1 ? ' done' : '');
+        document.getElementById('conn2').className = 'step-connector' + (step > 2 ? ' done' : '');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function logout() {
+        fetch(`${API}/api/logout`, { method: 'POST', credentials: 'include' }).catch(() => {});
+        ['nomeCompleto','perfil','role','idCliente','estatuto'].forEach(k => localStorage.removeItem(k));
+        window.location.href = 'index.html';
+    }
+
+    function escHtml(s) { if (!s) return ''; return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function formatBytes(b) { if (!b) return ''; if (b < 1024) return b+' B'; if (b < 1048576) return (b/1024).toFixed(1)+' KB'; return (b/1048576).toFixed(1)+' MB'; }
+    function showToast(msg, type) {
+        let t = document.getElementById('_toast_pe');
+        if (!t) { t = document.createElement('div'); t.id = '_toast_pe'; t.style.cssText = 'position:fixed;bottom:84px;left:50%;transform:translateX(-50%);padding:12px 22px;border-radius:14px;font-family:Inter,sans-serif;font-size:0.88rem;font-weight:600;z-index:9999;box-shadow:0 6px 24px rgba(0,0,0,0.18);white-space:nowrap;max-width:90vw;text-align:center;transition:opacity 0.3s;'; document.body.appendChild(t); }
+        t.textContent = msg;
+        t.style.background = type === 'success' ? '#34c759' : '#ff3b30';
+        t.style.color = '#fff'; t.style.opacity = '1';
+        clearTimeout(t._timer); t._timer = setTimeout(() => { t.style.opacity = '0'; }, 3500);
+    }
+    </script>
+</body>
+</html>

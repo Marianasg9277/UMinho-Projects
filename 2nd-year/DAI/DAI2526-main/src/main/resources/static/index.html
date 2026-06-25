@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TUB - Iniciar Sessão</title>
+
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="bg-shape shape1"></div>
+    <div class="bg-shape shape2"></div>
+
+    <nav class="navbar">
+        <img src="imgs/logoBar.png" alt="TUB Logo" class="nav-logo">
+        <button class="nav-btn" onclick="abrirModal()">Iniciar sessão</button>
+    </nav>
+
+    <div id="modal-overlay" class="modal-overlay hidden">
+
+        <div id="modal-login" class="glass-modal">
+            <span class="close-btn" onclick="fecharModal()">&times;</span>
+
+            <div class="modal-header">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#e60000" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                <h2 class="tub-blue-text">Aceder</h2>
+            </div>
+
+            <form id="form-login" onsubmit="fazerLogin(event)">
+                <div class="input-group">
+                    <input type="email" id="login-email" placeholder="Endereço de E-mail" required>
+                </div>
+
+                <div class="input-group password-group">
+                    <input type="password" id="login-password" placeholder="Palavra-passe" required>
+                    <span class="toggle-password" onclick="togglePasswordVisibility('login-password', this)">
+                        <svg class="eye-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                    </span>
+                </div>
+
+                <p id="login-erro" class="error-msg"></p>
+
+                <button type="submit" class="btn-primary">Iniciar sessão</button>
+                <button type="button" class="btn-secondary" onclick="alternarVista('register')">Criar conta</button>
+
+                <a href="#" class="forgot-link">Esqueci-me da password ></a>
+            </form>
+        </div>
+
+        <div id="modal-register" class="glass-modal hidden">
+            <span class="close-btn" onclick="fecharModal()">&times;</span>
+
+            <div class="modal-header">
+                <h2 class="tub-blue-text">Criar Conta</h2>
+            </div>
+
+            <form id="form-register" onsubmit="criarConta(event)">
+                <div class="input-group">
+                    <input type="text" id="reg-nome" placeholder="Nome completo" required>
+                </div>
+
+                <div class="input-group">
+                    <input type="email" id="reg-email" placeholder="Endereço de E-mail" required>
+                </div>
+
+                <div class="input-group password-group">
+                    <input type="password" id="reg-password" placeholder="Palavra-passe" required>
+                    <span class="toggle-password" onclick="togglePasswordVisibility('reg-password', this)">
+                        <svg class="eye-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                    </span>
+                </div>
+
+                <div class="input-group">
+                    <input type="date" id="reg-data" title="Data de Nascimento" required>
+                </div>
+
+                <div class="input-group">
+                    <select id="reg-perfil" required>
+                        <option value="" disabled selected>Selecione o seu Perfil</option>
+                        <option value="ESTUDANTE">Estudante</option>
+                        <option value="MILITAR">Militar</option>
+                        <option value="NORMAL">Normal</option>
+                    </select>
+                </div>
+
+                <p id="reg-sucesso" class="success-msg"></p>
+
+                <button type="submit" class="btn-primary">Registar</button>
+                <button type="button" class="btn-secondary" onclick="alternarVista('login')">Voltar ao Login</button>
+            </form>
+        </div>
+
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

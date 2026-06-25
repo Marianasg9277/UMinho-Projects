@@ -1,0 +1,430 @@
+/* =============================================
+   subpage.css  – Shared styles for TUB sub-pages
+   Uses same design tokens as styles.css
+   ============================================= */
+
+/* ── Page Header ── */
+.sp-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    height: 64px;
+    background: rgba(0, 119, 182, 0.55);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-bottom: 1px solid rgba(255,255,255,0.15);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.sp-back-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: #fff;
+    text-decoration: none;
+    transition: background 0.2s ease, transform 0.2s ease;
+    flex-shrink: 0;
+}
+.sp-back-btn:hover {
+    background: rgba(255,255,255,0.28);
+    transform: translateX(-2px);
+}
+
+.sp-page-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #ffffff;
+    text-align: center;
+    flex: 1;
+}
+
+.sp-header-right {
+    width: 38px;
+    flex-shrink: 0;
+}
+
+/* ── Generic card ── */
+.sp-card {
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255,255,255,0.55);
+    border-radius: 20px;
+    padding: 20px 18px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+.sp-section-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #6b7280;
+    margin-bottom: 14px;
+}
+
+/* ── Ticket type grid ── */
+.sp-ticket-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.sp-ticket-type {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 8px;
+    background: rgba(255,255,255,0.5);
+    border: 2px solid rgba(0,0,0,0.06);
+    border-radius: 16px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.22s ease;
+    margin-bottom: 0;
+    width: 100%;
+}
+.sp-ticket-type:hover {
+    border-color: var(--tub-blue);
+    color: var(--tub-blue);
+    transform: translateY(-1px);
+}
+.sp-ticket-active {
+    border-color: var(--tub-blue) !important;
+    background: rgba(0, 162, 232, 0.1) !important;
+    color: var(--tub-dark-blue) !important;
+    box-shadow: 0 0 0 3px rgba(0, 162, 232, 0.18);
+}
+
+/* ── Input row ── */
+.sp-input-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.sp-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #6b7280;
+}
+.sp-select, .sp-input {
+    width: 100%;
+    padding: 12px 14px;
+    background: rgba(255,255,255,0.6);
+    border: 1px solid rgba(255,255,255,0.8);
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-family: 'Inter', sans-serif;
+    color: #1a1a2e;
+    outline: none;
+    transition: all 0.2s ease;
+}
+.sp-select {
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23555555' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+}
+.sp-select:focus, .sp-input:focus {
+    border-color: var(--tub-blue);
+    box-shadow: 0 0 0 3px rgba(0, 162, 232, 0.15);
+}
+
+/* ── Price summary card ── */
+.sp-price-card {
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255,255,255,0.55);
+    border-radius: 20px;
+    padding: 18px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+.sp-price-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    font-size: 0.9rem;
+    color: #374151;
+}
+.sp-price-divider {
+    height: 1px;
+    background: rgba(0,0,0,0.07);
+    margin: 4px 0;
+}
+.sp-price-total {
+    font-weight: 700;
+    font-size: 1rem;
+    color: #1a1a2e;
+}
+
+/* ── Primary CTA button ── */
+.sp-cta-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--tub-blue) 0%, var(--tub-dark-blue) 100%);
+    color: #fff;
+    border: none;
+    border-radius: 18px;
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(0, 162, 232, 0.35);
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
+    margin-bottom: 0;
+}
+.sp-cta-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 28px rgba(0, 162, 232, 0.45);
+}
+.sp-cta-btn:active {
+    transform: translateY(0);
+}
+
+/* ── Lines list ── */
+.sp-lines-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.sp-line-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.55);
+    border-radius: 18px;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.07);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+}
+.sp-line-row:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.11);
+}
+.sp-line-num {
+    flex-shrink: 0;
+}
+.sp-line-detail {
+    flex: 1;
+    min-width: 0; /* prevent long line names from overflowing the row */
+}
+.sp-line-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #1a1a2e;
+    overflow-wrap: break-word;
+}
+.sp-line-meta {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    margin-top: 2px;
+}
+.sp-line-freq {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #6b7280;
+    background: rgba(0,0,0,0.05);
+    padding: 4px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+.sp-freq-soon {
+    background: rgba(52, 199, 89, 0.15);
+    color: #1aa855;
+}
+
+/* ── Search bar ── */
+.sp-search-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.55);
+    border-radius: 16px;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.06);
+}
+.sp-search-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 0.9rem;
+    font-family: 'Inter', sans-serif;
+    color: #1a1a2e;
+    outline: none;
+}
+.sp-search-input::placeholder { color: #9ca3af; }
+
+/* ── Notices (Avisos) ── */
+.sp-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.55);
+    border-radius: 18px;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.07);
+    margin-bottom: 10px;
+    position: relative;
+}
+.sp-notice--alert {
+    border-left: 3px solid #e60000;
+}
+.sp-notice-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    background: rgba(230, 0, 0, 0.1);
+    color: #e60000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.sp-notice-icon--info { background: rgba(0, 162, 232, 0.1); color: #0077b6; }
+.sp-notice-icon--ok   { background: rgba(52, 199, 89, 0.1);  color: #1aa855; }
+.sp-notice-body { flex: 1; min-width: 0; }
+.sp-notice-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #1a1a2e;
+}
+.sp-notice-desc {
+    font-size: 0.8rem;
+    color: #6b7280;
+    margin-top: 3px;
+    line-height: 1.4;
+}
+.sp-notice-time {
+    font-size: 0.72rem;
+    color: #9ca3af;
+    margin-top: 6px;
+    font-weight: 500;
+}
+.sp-notice-new {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: #e60000;
+    color: #fff;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 2px 7px;
+    border-radius: 20px;
+}
+
+/* ── Preçário tables ── */
+.sp-price-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+}
+.sp-price-table th {
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #9ca3af;
+    padding: 0 0 10px;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+.sp-price-table th:last-child { text-align: right; }
+.sp-price-table td {
+    padding: 11px 0;
+    border-bottom: 1px solid rgba(0,0,0,0.04);
+    color: #374151;
+    font-weight: 500;
+    vertical-align: middle;
+}
+.sp-price-table tr:last-child td { border-bottom: none; }
+.sp-price-val {
+    text-align: right;
+    font-weight: 700;
+    color: #1a1a2e;
+}
+.sp-tag {
+    display: inline-block;
+    background: rgba(52, 199, 89, 0.15);
+    color: #1aa855;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 20px;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+
+/* ── Zapping grid ── */
+.sp-zapping-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+.sp-zapping-item {
+    text-align: center;
+    padding: 14px 8px;
+    background: linear-gradient(135deg, rgba(0,162,232,0.1) 0%, rgba(0,119,182,0.08) 100%);
+    border: 1px solid rgba(0,162,232,0.2);
+    border-radius: 14px;
+}
+.sp-zapping-load {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--tub-dark-blue);
+}
+.sp-zapping-bonus {
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: #1aa855;
+    margin-top: 3px;
+}
+
+/* ── Footnote ── */
+.sp-footnote {
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.6);
+    text-align: center;
+    margin-top: -8px;
+}
+
+/* ── Narrow-screen fixes (≤360px – iPhone SE, older Androids) ────────────── */
+@media (max-width: 360px) {
+    /* Tighten card padding to reclaim horizontal space */
+    .sp-card { padding: 16px 14px; }
+    .sp-price-card { padding: 14px; }
+
+    /* 3-column grids → 2 columns: prevents 100px-wide cells with wrapped text */
+    .sp-ticket-grid,
+    .sp-zapping-grid { grid-template-columns: repeat(2, 1fr); }
+}

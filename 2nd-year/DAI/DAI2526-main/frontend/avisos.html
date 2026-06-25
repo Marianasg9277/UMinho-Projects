@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>TUB – Avisos</title>
+    <meta name="description" content="Avisos e alertas de perturbações nas linhas TUB.">
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#0f8bb5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="TUB">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="subpage.css">
+</head>
+<body>
+    <div class="bg-shape shape1"></div>
+    <div class="bg-shape shape2"></div>
+
+    <header class="sp-header">
+        <a href="index.html" class="sp-back-btn" aria-label="Voltar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+        </a>
+        <h1 class="sp-page-title">Avisos</h1>
+        <span id="avisos-header-badge" class="kf-badge" style="font-size:0.75rem;padding:4px 10px;">…</span>
+    </header>
+
+    <main class="kf-main">
+
+        <!-- Notices – populated dynamically -->
+        <section id="avisos-recentes">
+            <h2 class="sp-section-title" style="margin-bottom: 12px;">Recentes</h2>
+            <div id="lista-avisos-novos">
+                <div style="padding:24px;text-align:center;color:#94a3b8;">A carregar avisos…</div>
+            </div>
+        </section>
+
+        <section id="avisos-anteriores">
+            <h2 class="sp-section-title" style="margin-bottom: 12px;">Anteriores</h2>
+            <div id="lista-avisos-old"></div>
+        </section>
+
+    </main>
+
+    <nav class="kf-bottom-nav" aria-label="Navegação principal">
+        <a href="index.html" class="kf-nav-item" id="nav-inicio">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            <span>Início</span>
+        </a>
+        <a href="carteira.html" class="kf-nav-item" id="nav-carteira">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="5" width="20" height="14" rx="2"/>
+                <path d="M16 12h4v4h-4a2 2 0 0 1 0-4z"/>
+            </svg>
+            <span>Carteira</span>
+        </a>
+        <a href="pagamentos.html" class="kf-nav-item" id="nav-pagamentos">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                <line x1="1" y1="10" x2="23" y2="10"></line>
+            </svg>
+            <span>Pagamentos</span>
+        </a>
+        <a href="perfil.html" class="kf-nav-item" id="nav-perfil">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span>Perfil</span>
+        </a>
+    </nav>
+
+    <script>
+        const API_BASE = '';
+
+        function avisoIcon(tipo) {
+            if (tipo === 'ALERTA') return `
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>`;
+            if (tipo === 'OK') return `
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>`;
+            return `
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>`;
+        }
+
+        function formatDataHora(dt) {
+            const d = new Date(dt);
+            return d.toLocaleString('pt-PT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+        }
+
+        function renderAviso(a) {
+            const alertClass = a.tipo === 'ALERTA' ? 'sp-notice sp-notice--alert'
+                             : a.tipo === 'OK'     ? 'sp-notice sp-notice--ok'
+                             : 'sp-notice';
+            const iconClass  = a.tipo === 'OK'    ? 'sp-notice-icon sp-notice-icon--ok'
+                             : a.tipo === 'INFO'  ? 'sp-notice-icon sp-notice-icon--info'
+                             : 'sp-notice-icon';
+            return `
+                <div class="${alertClass}">
+                    <div class="${iconClass}">${avisoIcon(a.tipo)}</div>
+                    <div class="sp-notice-body">
+                        <p class="sp-notice-title">${a.titulo}</p>
+                        <p class="sp-notice-desc">${a.descricao}</p>
+                        <p class="sp-notice-time">${formatDataHora(a.dataHora)}</p>
+                    </div>
+                    ${a.novo ? '<span class="sp-notice-new">Novo</span>' : ''}
+                </div>`;
+        }
+
+        async function carregarAvisos() {
+            try {
+                const res = await fetch(`${API_BASE}/api/avisos`);
+                const avisos = await res.json();
+
+                const novos = avisos.filter(a => a.novo);
+                const antigos = avisos.filter(a => !a.novo);
+
+                const badge = document.getElementById('avisos-header-badge');
+                if (badge) badge.textContent = `${novos.length} novo${novos.length !== 1 ? 's' : ''}`;
+
+                const containerNovos = document.getElementById('lista-avisos-novos');
+                const containerAntigos = document.getElementById('lista-avisos-old');
+
+                containerNovos.innerHTML = novos.length
+                    ? novos.map(renderAviso).join('')
+                    : '<div style="padding:16px;color:#94a3b8;">Sem avisos novos.</div>';
+
+                containerAntigos.innerHTML = antigos.length
+                    ? antigos.map(renderAviso).join('')
+                    : '<div style="padding:16px;color:#94a3b8;">Sem avisos anteriores.</div>';
+
+                // Show/hide older section
+                document.getElementById('avisos-anteriores').style.display = antigos.length ? '' : 'none';
+            } catch (e) {
+                console.error(e);
+                document.getElementById('lista-avisos-novos').innerHTML =
+                    '<div style="padding:24px;text-align:center;color:#ef4444;">Erro ao carregar avisos.</div>';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', carregarAvisos);
+    </script>
+</body>
+</html>

@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>TUB – Fiscalizar QR</title>
+    <meta name="description" content="Fiscalização de código QR de passe ou bilhete TUB.">
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#0f8bb5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="TUB">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="subpage.css">
+    <script src="session-guard.js"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <style>
+        .kf-main { padding-bottom: 1.5rem; }
+
+        #camera-viewport {
+            position: relative; width: 100%; max-width: 400px;
+            margin: 0 auto 8px auto; border-radius: 16px; overflow: hidden;
+            background: #000; aspect-ratio: 1 / 1; display: none;
+        }
+        #camera-viewport video {
+            width: 100% !important; height: 100% !important;
+            object-fit: contain !important; border-radius: 16px !important; display: block !important;
+        }
+        #qr-reader__dashboard, #qr-reader__header_message, #qr-reader__status_span { display: none !important; }
+        #qr-reader__scan_region { width: 100% !important; border: none !important; }
+        #scan-overlay { position: absolute; inset: 0; pointer-events: none; }
+        #scan-frame {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 62%; aspect-ratio: 1/1; border-radius: 12px;
+            border: 2.5px solid rgba(255,255,255,0.85);
+            box-shadow: 0 0 0 2000px rgba(0,0,0,0.35);
+        }
+
+        #btn-iniciar-camara {
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            width: 100%; padding: 16px 20px;
+            background: linear-gradient(135deg, var(--tub-blue,#00a2e8) 0%, var(--tub-dark-blue,#005f8e) 100%);
+            color: #fff; border: none; border-radius: 14px;
+            font-size: 1rem; font-weight: 700; font-family: 'Inter', sans-serif;
+            cursor: pointer; box-shadow: 0 6px 20px rgba(0,162,232,0.4);
+            transition: transform 0.18s, box-shadow 0.18s, opacity 0.18s; margin-bottom: 4px;
+        }
+        #btn-iniciar-camara:hover  { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(0,162,232,0.5); }
+        #btn-iniciar-camara:active { transform: scale(0.98); }
+        #btn-iniciar-camara:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+        .scanner-banner {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 14px; border-radius: 12px; margin-top: 10px;
+            font-size: 0.82rem; font-weight: 600;
+        }
+        .scanner-banner--active   { background: rgba(52,199,89,0.1);  color: #1aa855; }
+        .scanner-banner--paused   { background: rgba(255,149,0,0.1);  color: #e07000; }
+        .scanner-banner--error    { background: rgba(239,68,68,0.08); color: #ef4444; }
+
+        .manual-toggle {
+            width: 100%; background: none; border: none;
+            display: flex; align-items: center; justify-content: space-between;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem; font-weight: 600; color: #6b7280;
+            cursor: pointer; padding: 4px 0 12px; margin: 0;
+        }
+        .manual-toggle svg { transition: transform 0.2s; }
+        .manual-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+
+        /* ── Result card ── */
+        .fisc-result {
+            padding: 24px 20px;
+            background: rgba(255,255,255,0.72);
+            backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255,255,255,0.55);
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        .fisc-result--ok      { border-left: 4px solid #1aa855; }
+        .fisc-result--invalid { border-left: 4px solid #ef4444; }
+
+        .fisc-status { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+        .fisc-status-icon {
+            width: 52px; height: 52px; border-radius: 16px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; font-size: 1.5rem;
+        }
+        .fisc-status-icon--ok      { background: rgba(52,199,89,0.15); }
+        .fisc-status-icon--invalid { background: rgba(239,68,68,0.12); }
+        .fisc-status-label { font-size: 1.1rem; font-weight: 800; letter-spacing: -0.01em; }
+        .fisc-status-label--ok      { color: #1aa855; }
+        .fisc-status-label--invalid { color: #ef4444; }
+        .fisc-status-msg { font-size: 0.82rem; color: #6b7280; margin-top: 2px; }
+
+        /* ── Linha banner ── */
+        .linha-banner {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 14px; border-radius: 12px; margin-bottom: 16px;
+            font-size: 0.84rem; font-weight: 600;
+            background: rgba(0,119,182,0.08); color: #005f8e;
+            border: 1px solid rgba(0,119,182,0.15);
+        }
+
+        /* ── Validation match banner ── */
+        .match-banner {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 14px; border-radius: 12px; margin-bottom: 16px;
+            font-size: 0.84rem; font-weight: 600;
+        }
+        .match-banner--ok  { background: rgba(52,199,89,0.1);  color: #1a8a3a; border: 1px solid rgba(52,199,89,0.2); }
+        .match-banner--nok { background: rgba(239,68,68,0.08); color: #c0392b; border: 1px solid rgba(239,68,68,0.15); }
+
+        /* ── Detail rows ── */
+        .fisc-section-label {
+            font-size: 0.7rem; font-weight: 700; color: #9ca3af;
+            text-transform: uppercase; letter-spacing: 0.07em; margin: 16px 0 8px;
+        }
+        .fisc-detail-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 9px 0; border-bottom: 1px solid rgba(0,0,0,0.05); font-size: 0.86rem;
+        }
+        .fisc-detail-row:last-child { border-bottom: none; }
+        .fisc-detail-label {
+            color: #9ca3af; font-weight: 600; font-size: 0.78rem;
+            text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .fisc-detail-value { font-weight: 700; color: #1a1a2e; text-align: right; max-width: 60%; word-break: break-word; }
+
+        /* ── Last validations table ── */
+        .ultimas-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 6px; }
+        .ultimas-table th {
+            color: #9ca3af; font-weight: 700; font-size: 0.68rem;
+            text-transform: uppercase; letter-spacing: 0.06em;
+            padding: 7px 10px; text-align: left; background: rgba(0,0,0,0.025); border-radius: 6px;
+        }
+        .ultimas-table td { padding: 9px 10px; border-bottom: 1px solid rgba(0,0,0,0.04); vertical-align: middle; }
+        .ultimas-table tr:last-child td { border-bottom: none; }
+
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; }
+        .badge-green  { background: rgba(52,199,89,0.12); color: #1a8a3a; }
+        .badge-red    { background: rgba(239,68,68,0.12); color: #c0392b; }
+        .badge-grey   { background: rgba(142,142,147,0.12); color: #555; }
+
+        /* ── Input section ── */
+        .vqr-input-wrap { display: flex; gap: 10px; }
+        .vqr-input-wrap .sp-input { flex: 1; font-family: 'Courier New', monospace; font-size: 0.82rem; }
+        .vqr-submit-btn {
+            flex-shrink: 0; padding: 12px 20px;
+            background: linear-gradient(135deg, var(--tub-blue) 0%, var(--tub-dark-blue) 100%);
+            color: #fff; border: none; border-radius: 12px;
+            font-size: 0.9rem; font-weight: 700; font-family: 'Inter', sans-serif;
+            cursor: pointer; box-shadow: 0 4px 14px rgba(0,162,232,0.35);
+            transition: transform 0.2s, box-shadow 0.2s; width: auto; margin-bottom: 0;
+        }
+        .vqr-submit-btn:hover   { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(0,162,232,0.45); }
+        .vqr-submit-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+        .vqr-empty { text-align: center; padding: 32px 16px; color: #9ca3af; }
+        .vqr-empty svg { margin-bottom: 12px; opacity: 0.4; }
+        .vqr-empty p { font-size: 0.88rem; line-height: 1.5; }
+    </style>
+</head>
+<body>
+    <div class="bg-shape shape1"></div>
+    <div class="bg-shape shape2"></div>
+
+    <!-- Header -->
+    <header class="sp-header">
+        <a href="fiscalizacao.html" class="sp-back-btn" aria-label="Voltar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 12H5M12 5l-7 7 7 7"></path>
+            </svg>
+        </a>
+        <h1 class="sp-page-title">Fiscalizar QR</h1>
+        <div class="sp-header-right">
+            <button class="sp-back-btn" onclick="logout()" aria-label="Terminar sessão" style="cursor:pointer;border:none;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16 17 21 12 16 7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <main class="kf-main">
+
+        <!-- ── Câmara QR Scanner ── -->
+        <section class="sp-card" id="camera-section" style="margin-bottom:14px;">
+            <h2 class="sp-section-title" style="margin-bottom:14px;">Câmara</h2>
+
+            <div id="camera-viewport">
+                <div id="qr-reader"></div>
+                <div id="scan-overlay"><div id="scan-frame"></div></div>
+            </div>
+
+            <button id="btn-iniciar-camara" onclick="iniciarScanner()">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M23 7l-7 5 7 5V7z"></path>
+                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                </svg>
+                Ativar Câmara
+            </button>
+
+            <div id="scanner-banner" class="scanner-banner" style="display:none;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span id="scanner-banner-msg"></span>
+            </div>
+        </section>
+
+        <!-- ── Inserção Manual ── -->
+        <section class="sp-card" style="margin-bottom:14px;">
+            <button class="manual-toggle" id="manual-toggle" aria-expanded="false" onclick="toggleManual()">
+                Inserção manual
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+            </button>
+            <div id="manual-panel" style="display:none;">
+                <div class="vqr-input-wrap">
+                    <input type="text" id="qr-input" class="sp-input"
+                        placeholder="Cole ou escreva o token QR…"
+                        autocomplete="off" spellcheck="false"/>
+                    <button id="btn-verificar" class="vqr-submit-btn" onclick="fiscalizar()">
+                        Verificar
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── Resultado ── -->
+        <div id="result-area">
+            <div class="vqr-empty" id="estado-vazio">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                </svg>
+                <p>Aponte a câmara para um código QR<br>ou insira o token manualmente.</p>
+            </div>
+
+            <div id="resultado-card" style="display:none;" class="fisc-result">
+                <!-- preenchido por JS -->
+            </div>
+        </div>
+
+        <button class="sp-cta-btn" id="btn-novo" style="display:none;" onclick="novaFiscalizacao()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="1 4 1 10 7 10"></polyline>
+                <path d="M3.51 15a9 9 0 1 0 .49-3.1"></path>
+            </svg>
+            Nova fiscalização
+        </button>
+
+    </main>
+
+    <script>
+        const API = '';
+
+        let html5Qrcode  = null;
+        let scannerAtivo = false;
+        let scannerPausado = false;
+
+        document.addEventListener('DOMContentLoaded', function () {
+            html5Qrcode = new Html5Qrcode('qr-reader', { verbose: false });
+        });
+
+        // ── Scanner ─────────────────────────────────────────────────────────
+
+        function iniciarScanner() {
+            if (!window.isSecureContext) {
+                mostrarBanner('error', 'A câmara requer HTTPS. Use a inserção manual.');
+                abrirManual();
+                return;
+            }
+            const btn = document.getElementById('btn-iniciar-camara');
+            btn.disabled = true;
+            btn.textContent = 'A ligar câmara…';
+            scannerPausado = false;
+
+            const stopPromise = (scannerAtivo && html5Qrcode)
+                ? html5Qrcode.stop().catch(() => {})
+                : Promise.resolve();
+
+            stopPromise.then(function () {
+                scannerAtivo = false;
+                if (!html5Qrcode) html5Qrcode = new Html5Qrcode('qr-reader', { verbose: false });
+
+                html5Qrcode.start(
+                    { facingMode: { ideal: 'environment' } },
+                    {
+                        fps: 10,
+                        qrbox: { width: 250, height: 250 },
+                        aspectRatio: 1.0,
+                        videoConstraints: {
+                            facingMode: { ideal: 'environment' },
+                            advanced: [{ facingMode: 'environment' }]
+                        }
+                    },
+                    onScanSuccess,
+                    null
+                )
+                .then(function () {
+                    scannerAtivo = true;
+                    document.getElementById('camera-viewport').style.display = 'block';
+                    btn.style.display = 'none';
+                    mostrarBanner('active', 'Câmara ativa — aponte para um código QR');
+                })
+                .catch(function (err) {
+                    scannerAtivo = false;
+                    btn.disabled = false;
+                    btn.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"></path><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg> Tentar novamente';
+                    let msg = 'Câmara não disponível. Use a inserção manual.';
+                    if (err && err.name === 'NotAllowedError') msg = 'Permissão da câmara recusada.';
+                    else if (err && err.name === 'NotFoundError')  msg = 'Nenhuma câmara encontrada.';
+                    mostrarBanner('error', msg);
+                    abrirManual();
+                });
+            });
+        }
+
+        async function onScanSuccess(decodedText) {
+            if (scannerPausado) return;
+            scannerPausado = true;
+            try { await html5Qrcode.pause(true); } catch(e) {}
+            mostrarBanner('paused', 'QR lido — a fiscalizar…');
+            const token = normalizeQrToken(decodedText);
+            if (!token) {
+                mostrarBanner('error', 'QR inválido — formato não reconhecido.');
+                scannerPausado = false;
+                return;
+            }
+            document.getElementById('qr-input').value = token;
+            await fiscalizar();
+        }
+
+        function normalizeQrToken(raw) {
+            let value = (typeof raw === 'string') ? raw.trim() : String(raw).trim();
+            for (let i = 0; i < 2; i++) {
+                let parsed;
+                try { parsed = JSON.parse(value); } catch (e) { break; }
+                if (typeof parsed === 'string') { value = parsed.trim(); continue; }
+                if (parsed && typeof parsed === 'object') {
+                    return (parsed.token && typeof parsed.token === 'string') ? parsed.token.trim() : null;
+                }
+                break;
+            }
+            return value;
+        }
+
+        // ── Manual toggle ────────────────────────────────────────────────────
+
+        function toggleManual() {
+            const btn   = document.getElementById('manual-toggle');
+            const panel = document.getElementById('manual-panel');
+            const open  = btn.getAttribute('aria-expanded') === 'true';
+            btn.setAttribute('aria-expanded', String(!open));
+            panel.style.display = open ? 'none' : 'flex';
+            if (!open) document.getElementById('qr-input').focus();
+        }
+
+        function abrirManual() {
+            const btn = document.getElementById('manual-toggle');
+            btn.setAttribute('aria-expanded', 'true');
+            document.getElementById('manual-panel').style.display = 'flex';
+        }
+
+        // ── Fiscalizar ───────────────────────────────────────────────────────
+
+        async function fiscalizar() {
+            const input  = document.getElementById('qr-input');
+            const codigo = input.value.trim();
+            if (!codigo) { input.focus(); return; }
+
+            const btn = document.getElementById('btn-verificar');
+            btn.disabled = true;
+            btn.textContent = '…';
+
+            try {
+                const url = `${API}/api/fiscalizacao/qr/${encodeURIComponent(codigo)}/verificar`;
+                const res = await fetch(url, { credentials: 'include' });
+
+                if (res.status === 401 || res.status === 403) {
+                    mostrarErroHttp(res.status, null);
+                    return;
+                }
+
+                let data;
+                try { data = await res.json(); } catch(e) { mostrarErroRede(); return; }
+
+                if (!res.ok) { mostrarErroHttp(res.status, data); return; }
+
+                mostrarResultado(data);
+
+            } catch(e) {
+                mostrarErroRede();
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Verificar';
+            }
+        }
+
+        // ── Apresentação do resultado ────────────────────────────────────────
+
+        const MOTIVO_LABELS = {
+            'QR_DESCONHECIDO':          'Código QR não reconhecido',
+            'TOKEN_REVOGADO':           'Código QR revogado',
+            'TOKEN_EXPIRADO':           'Código QR expirado — peça ao passageiro que gere um novo QR',
+            'PASSE_EXPIRADO':           'Passe expirado',
+            'PASSE_INATIVO':            'Passe inativo (pagamento pendente)',
+            'PASSE_INVALIDO':           'Passe inválido',
+            'BILHETE_NAO_PAGO':         'Bilhete não pago',
+            'SEM_VALIDACAO_REGISTADA':  'Sem validação registada — passageiro não entrou pelo motorista',
+            'VALIDADO_NOUTRA_LINHA':    'Título validado noutra linha',
+            'SEM_LINHA_ATRIBUIDA':      'Fiscalizador sem linha atribuída — contacte o supervisor',
+            'NAO_FISCALIZADOR':         'Utilizador não é fiscalizador',
+            'NAO_AUTENTICADO':          'Sessão expirada — faça login novamente',
+        };
+
+        const ESTADO_PASSE_LABELS = {
+            'ACTIVE': 'Ativo', 'INACTIVE': 'Inativo', 'FALTA_RENOVAR': 'Expirado',
+        };
+        const ESTADO_BILHETE_LABELS = {
+            'PAID': 'Pago', 'USED': 'Utilizado', 'PENDING': 'Pendente',
+            'CANCELLED': 'Cancelado', 'FAILED': 'Falhado',
+        };
+        const ESTATUTO_LABELS = {
+            'SEM_ESTATUTO':'Normal','ESTUDANTE':'Estudante','RESIDENTE':'Residente',
+            'SENIOR':'Sénior','MILITAR':'Militar','CRIANCA':'Criança','INCAPACITADO':'Incapacitado',
+        };
+
+        function mostrarResultado(data) {
+            document.getElementById('estado-vazio').style.display = 'none';
+            document.getElementById('btn-novo').style.display = '';
+
+            const card = document.getElementById('resultado-card');
+            card.style.display = '';
+
+            const ok = data.valido === true;
+            card.className = `fisc-result fisc-result--${ok ? 'ok' : 'invalid'}`;
+
+            const iconSvg = ok
+                ? '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1aa855" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>'
+                : '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+
+            const tituloPrincipal = ok ? 'Fiscalização OK' : 'Fiscalização falhada';
+            const msgPrincipal = data.mensagem || (ok ? 'Título válido.' : MOTIVO_LABELS[data.motivoInvalidade] || data.motivoInvalidade || 'Falha na fiscalização.');
+
+            let html = `
+                <div class="fisc-status">
+                    <div class="fisc-status-icon fisc-status-icon--${ok ? 'ok' : 'invalid'}">${iconSvg}</div>
+                    <div>
+                        <div class="fisc-status-label fisc-status-label--${ok ? 'ok' : 'invalid'}">${escHtml(tituloPrincipal)}</div>
+                        <div class="fisc-status-msg">${escHtml(msgPrincipal)}</div>
+                    </div>
+                </div>`;
+
+            // Linha do fiscalizador
+            if (data.linhaFiscalizador) {
+                html += `<div class="linha-banner">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                    A sua linha: <strong>${escHtml(data.linhaFiscalizador)}</strong>
+                </div>`;
+            }
+
+            // Correspondência da validação
+            if (data.validadoNaLinhaAtual === true) {
+                const dtValidacao = data.dataHoraValidacao ? formatDataHora(data.dataHoraValidacao) : '—';
+                html += `<div class="match-banner match-banner--ok">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    Validado nesta linha em ${escHtml(dtValidacao)}
+                </div>`;
+            } else if (data.validadoNaLinhaAtual === false) {
+                let matchMsg = MOTIVO_LABELS[data.motivoInvalidade] || 'Sem validação nesta linha.';
+                if (data.linhaValidacao) matchMsg = `Validado em: ${data.linhaValidacao}`;
+                else if (data.motivoInvalidade === 'SEM_VALIDACAO_REGISTADA') matchMsg = 'Sem qualquer validação registada.';
+                html += `<div class="match-banner match-banner--nok">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    ${escHtml(matchMsg)}
+                </div>`;
+            }
+
+            // Foto do titular (apenas para passes com foto)
+            if (data.tipoTitulo === 'PASSE' && data.titular) {
+                const fotoHtml = (data.temFotoPasse && data.fotoTitularUrl)
+                    ? `<img src="${escHtml(data.fotoTitularUrl)}" alt="Titular"
+                            style="width:64px;height:64px;border-radius:50%;object-fit:cover;flex-shrink:0;
+                                   border:2.5px solid rgba(0,162,232,0.35);"
+                            onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                       <div style="display:none;width:64px;height:64px;border-radius:50%;flex-shrink:0;
+                                   background:rgba(0,162,232,0.08);border:2px dashed rgba(0,162,232,0.25);
+                                   align-items:center;justify-content:center;">
+                           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(0,162,232,0.45)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                       </div>`
+                    : `<div style="width:64px;height:64px;border-radius:50%;flex-shrink:0;
+                                   background:rgba(0,162,232,0.08);border:2px dashed rgba(0,162,232,0.25);
+                                   display:flex;align-items:center;justify-content:center;">
+                           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(0,162,232,0.45)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                       </div>`;
+                html += `<div style="display:flex;align-items:center;gap:14px;
+                                     padding:14px 0 16px;border-bottom:1px solid rgba(0,0,0,0.05);
+                                     margin-bottom:4px;">
+                    ${fotoHtml}
+                    <div>
+                        <div style="font-size:0.72rem;font-weight:700;color:#9ca3af;
+                                    text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;">Titular</div>
+                        <div style="font-size:0.95rem;font-weight:700;color:#1a1a2e;line-height:1.3;">${escHtml(data.titular)}</div>
+                    </div>
+                </div>`;
+            }
+
+            // Dados do título
+            const tipoLabel = data.tipoTitulo === 'PASSE' ? 'Passe' : data.tipoTitulo === 'BILHETE' ? 'Bilhete' : (data.tipoTitulo || '');
+            html += `<div class="fisc-section-label">Dados do título</div>`;
+            html += rowDetail('Tipo', tipoLabel);
+            html += rowDetail('Titular', data.tipoTitulo !== 'PASSE' ? data.titular : null);
+            if (data.tipoTitulo === 'PASSE') {
+                html += rowDetail('Tipo de Passe', data.tipoPasse);
+                html += rowDetail('Coroa / Zona', data.coroa);
+                if (data.estatuto) html += rowDetail('Estatuto', ESTATUTO_LABELS[data.estatuto] || data.estatuto);
+                html += rowDetail('Válido de', formatData(data.validadeInicio));
+                html += rowDetail('Válido até', formatData(data.validadeFim));
+                html += rowDetail('Estado', ESTADO_PASSE_LABELS[data.estado] || data.estado);
+            } else if (data.tipoTitulo === 'BILHETE') {
+                html += rowDetail('Tipo de Bilhete', data.tipoBilhete);
+                html += rowDetail('Comprado em', formatData(data.validadeInicio));
+                html += rowDetail('Válido até', data.validadeFim ? formatDataHora(data.validadeFim) : null);
+                html += rowDetail('Estado', ESTADO_BILHETE_LABELS[data.estado] || data.estado);
+            }
+
+            // Linha da validação registada
+            if (data.linhaValidacao) {
+                html += `<div class="fisc-section-label">Validação registada</div>`;
+                html += rowDetail('Linha', data.linhaValidacao);
+                if (data.dataHoraValidacao) html += rowDetail('Data / Hora', formatDataHora(data.dataHoraValidacao));
+            }
+
+            // Últimas 5 validações
+            if (data.ultimasValidacoes && data.ultimasValidacoes.length > 0) {
+                html += `<div class="fisc-section-label">Últimas validações</div>
+                <table class="ultimas-table">
+                    <thead><tr>
+                        <th>Data / Hora</th><th>Linha</th><th>Estado</th><th>Motivo</th>
+                    </tr></thead>
+                    <tbody>`;
+                data.ultimasValidacoes.forEach(v => {
+                    const suc = v.sucesso === true;
+                    const badge = suc
+                        ? '<span class="badge badge-green">✓</span>'
+                        : v.sucesso === false
+                            ? '<span class="badge badge-red">✗</span>'
+                            : '<span class="badge badge-grey">—</span>';
+                    const motivo = v.motivoRejeicao ? (MOTIVO_LABELS[v.motivoRejeicao] || v.motivoRejeicao) : '—';
+                    html += `<tr>
+                        <td style="white-space:nowrap;color:#6b7280;font-size:0.78rem;">${escHtml(formatDataHora(v.dataHora))}</td>
+                        <td style="color:#374151;font-size:0.8rem;">${escHtml(v.linha || '—')}</td>
+                        <td>${badge}</td>
+                        <td style="color:#6b7280;font-size:0.78rem;">${escHtml(suc ? '—' : motivo)}</td>
+                    </tr>`;
+                });
+                html += `</tbody></table>`;
+            } else if (data.tipoTitulo) {
+                html += `<div class="fisc-section-label">Últimas validações</div>
+                <div style="font-size:0.82rem;color:#9ca3af;padding:10px 0;">Sem validações anteriores registadas.</div>`;
+            }
+
+            card.innerHTML = html;
+
+            if (scannerPausado) {
+                mostrarBanner(ok ? 'active' : 'error', ok ? 'Fiscalização OK' : 'Fiscalização falhada');
+            }
+        }
+
+        // ── Utilitários ──────────────────────────────────────────────────────
+
+        function rowDetail(label, value) {
+            if (!value) return '';
+            return `<div class="fisc-detail-row">
+                <span class="fisc-detail-label">${label}</span>
+                <span class="fisc-detail-value">${escHtml(value)}</span>
+            </div>`;
+        }
+
+        function formatData(s) {
+            if (!s) return null;
+            const p = s.split('-');
+            if (p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+            return s;
+        }
+
+        function formatDataHora(s) {
+            if (!s) return '—';
+            const d = new Date(s);
+            if (isNaN(d.getTime())) return s;
+            return d.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                + ' ' + d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function escHtml(v) {
+            return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+
+        function mostrarBanner(tipo, msg) {
+            const banner = document.getElementById('scanner-banner');
+            banner.className = `scanner-banner scanner-banner--${tipo}`;
+            document.getElementById('scanner-banner-msg').textContent = msg;
+            banner.style.display = '';
+        }
+
+        function mostrarErroHttp(status, data) {
+            document.getElementById('estado-vazio').style.display = 'none';
+            document.getElementById('btn-novo').style.display = '';
+            const card = document.getElementById('resultado-card');
+            card.style.display = '';
+            card.className = 'fisc-result fisc-result--invalid';
+            let titulo, desc;
+            if (status === 401) { titulo = 'Não autenticado'; desc = 'Faça login novamente.'; }
+            else if (status === 403) { titulo = 'Acesso negado'; desc = 'Sem permissão para fiscalizar.'; }
+            else { titulo = `Erro ${status}`; desc = (data && data.message) || 'Resposta inesperada do servidor.'; }
+            card.innerHTML = `<div class="fisc-status">
+                <div class="fisc-status-icon fisc-status-icon--invalid"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg></div>
+                <div><div class="fisc-status-label fisc-status-label--invalid">${escHtml(titulo)}</div><div class="fisc-status-msg">${escHtml(desc)}</div></div>
+            </div>`;
+            if (scannerPausado) mostrarBanner('error', titulo);
+        }
+
+        function mostrarErroRede() {
+            mostrarErroHttp(0, { message: 'Não foi possível contactar o servidor.' });
+        }
+
+        function novaFiscalizacao() {
+            document.getElementById('qr-input').value = '';
+            document.getElementById('resultado-card').style.display = 'none';
+            document.getElementById('estado-vazio').style.display = '';
+            document.getElementById('btn-novo').style.display = 'none';
+            scannerPausado = false;
+
+            if (scannerAtivo && html5Qrcode) {
+                try { html5Qrcode.resume(); } catch(e) {}
+                mostrarBanner('active', 'Câmara ativa — aponte para um código QR');
+            } else {
+                const btn = document.getElementById('btn-iniciar-camara');
+                btn.style.display = 'flex'; btn.disabled = false;
+                btn.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"></path><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg> Ativar Câmara';
+                document.getElementById('camera-viewport').style.display = 'none';
+                document.getElementById('scanner-banner').style.display = 'none';
+            }
+        }
+
+        function logout() {
+            fetch(`${API}/api/logout`, { method: 'POST', credentials: 'include' }).catch(() => {});
+            ['nomeCompleto','perfil','role','idCliente','estatuto','estatutoAutomatico',
+             'dataNascimento','morada','nif','telefone','cc'].forEach(k => localStorage.removeItem(k));
+            window.location.href = 'index.html';
+        }
+
+        document.getElementById('qr-input').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') fiscalizar();
+        });
+
+        window.addEventListener('pagehide', function () {
+            if (scannerAtivo && html5Qrcode) html5Qrcode.stop().catch(() => {});
+        });
+    </script>
+</body>
+</html>

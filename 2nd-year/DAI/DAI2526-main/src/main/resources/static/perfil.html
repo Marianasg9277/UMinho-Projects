@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TUB - Perfil do Utilizador</title>
+
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .profile-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: calc(100vh - 70px);
+            padding: 20px;
+        }
+
+        .profile-card {
+            width: 500px;
+            padding: 40px;
+        }
+
+        .profile-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            background: rgba(0, 162, 232, 0.1);
+            border: 2px solid var(--tub-blue);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 15px auto;
+        }
+
+        .profile-info {
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: left;
+        }
+
+        .info-group {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .info-group:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-size: 0.85rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .info-value {
+            font-size: 1.1rem;
+            color: var(--text-dark);
+            font-weight: 500;
+        }
+
+        .btn-logout {
+            background: rgba(230, 0, 0, 0.1);
+            color: #e60000;
+            border: 1px solid rgba(230, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .btn-logout:hover {
+            background: #e60000;
+            color: white;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-shape shape1"></div>
+    <div class="bg-shape shape2"></div>
+
+    <nav class="navbar">
+        <img src="imgs/logoBar.png" alt="TUB Logo" class="nav-logo">
+        <button class="nav-btn" onclick="logout()">Terminar sessão</button>
+    </nav>
+
+    <div class="profile-wrapper">
+        <div class="glass-modal profile-card">
+            <div class="profile-header">
+                <div class="profile-avatar">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--tub-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                </div>
+                <h2 class="tub-blue-text">A tua Conta</h2>
+            </div>
+
+            <div class="profile-info">
+                <div class="info-group">
+                    <div class="info-label">Nome Completo</div>
+                    <div class="info-value" id="nomeCompleto">A carregar...</div>
+                </div>
+
+                <div class="info-group">
+                    <div class="info-label">Tipo de Perfil</div>
+                    <div class="info-value" id="perfil">A carregar...</div>
+                </div>
+
+                <div class="info-group">
+                    <div class="info-label">Data de Nascimento</div>
+                    <div class="info-value" id="dataNascimento">A carregar...</div>
+                </div>
+            </div>
+
+            <button class="btn-logout" onclick="logout()">Terminar sessão</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const nomeStr = localStorage.getItem("nomeCompleto");
+            const perfilStr = localStorage.getItem("perfil");
+            const dataNascStr = localStorage.getItem("dataNascimento");
+
+            if (!nomeStr || !perfilStr || !dataNascStr) {
+                window.location.href = "index.html";
+            } else {
+                document.getElementById("nomeCompleto").innerText = nomeStr;
+                
+                // Capitalize the first letter of the profile
+                const perfilFormatado = perfilStr.charAt(0).toUpperCase() + perfilStr.slice(1).toLowerCase();
+                document.getElementById("perfil").innerText = perfilFormatado;
+                
+                // Format the date (assuming YYYY-MM-DD)
+                try {
+                    const dataObj = new Date(dataNascStr);
+                    if (!isNaN(dataObj)) {
+                        document.getElementById("dataNascimento").innerText = dataObj.toLocaleDateString('pt-PT');
+                    } else {
+                        document.getElementById("dataNascimento").innerText = dataNascStr;
+                    }
+                } catch(e) {
+                    document.getElementById("dataNascimento").innerText = dataNascStr;
+                }
+            }
+        });
+
+        function logout() {
+            localStorage.removeItem("nomeCompleto");
+            localStorage.removeItem("perfil");
+            localStorage.removeItem("dataNascimento");
+            
+            // Add a small exit animation effect
+            const card = document.querySelector('.profile-card');
+            if (card) {
+                card.style.transform = 'scale(0.95)';
+                card.style.opacity = '0';
+                card.style.transition = 'all 0.3s ease';
+            }
+            
+            setTimeout(() => {
+                window.location.href = "index.html";
+            }, 300);
+        }
+    </script>
+</body>
+</html>

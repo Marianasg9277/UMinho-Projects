@@ -1,0 +1,22 @@
+# ── OS ───────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Environment / Secrets ────────────────────────────────────────────────────
+backend/.env
+*.env
+
+# ── Java / Maven ─────────────────────────────────────────────────────────────
+backend/target/
+backend/src/main/resources/static/
+
+# ── Docker ───────────────────────────────────────────────────────────────────
+# (keep docker-compose.yml but ignore any override files)
+docker-compose.override.yml
+
+# ── IDE ──────────────────────────────────────────────────────────────────────
+.idea/
+*.iml
+.vscode/
+uploads/
+backend/uploads/

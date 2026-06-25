@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>TUB – Comprar Bilhete</title>
+    <meta name="description" content="Compre o seu bilhete de autocarro TUB de forma rápida e segura.">
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#0f8bb5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="TUB">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="subpage.css">
+</head>
+<body>
+    <div class="bg-shape shape1"></div>
+    <div class="bg-shape shape2"></div>
+
+    <!-- Header -->
+    <header class="sp-header">
+        <a href="index.html" class="sp-back-btn" aria-label="Voltar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+        </a>
+        <h1 class="sp-page-title">Comprar Bilhete</h1>
+        <div class="sp-header-right"></div>
+    </header>
+
+    <main class="kf-main">
+
+        <!-- Ticket type selector – populated dynamically -->
+        <section class="sp-card">
+            <h2 class="sp-section-title">Tipo de bilhete</h2>
+            <div class="sp-ticket-grid" id="tipo-bilhete-grid">
+                <!-- Populated by JS -->
+            </div>
+        </section>
+
+        <!-- Line selector – populated dynamically -->
+        <section class="sp-card">
+            <h2 class="sp-section-title">Selecionar linha</h2>
+            <div class="sp-input-row">
+                <label class="sp-label" for="sel-linha">Linha</label>
+                <select id="sel-linha" class="sp-select">
+                    <option value="">Escolha uma linha...</option>
+                </select>
+            </div>
+        </section>
+
+        <!-- Guest information (shown only when not logged in) -->
+        <section class="sp-card" id="guest-section" style="display:none;">
+            <h2 class="sp-section-title">Informação de Visitante</h2>
+            <div class="sp-input-row" style="margin-bottom:12px;">
+                <label class="sp-label" for="guest-nome">Nome Completo (obrigatório)</label>
+                <input type="text" id="guest-nome" class="sp-input" placeholder="Ex: João Silva" required>
+            </div>
+            <div class="sp-input-row" style="margin-bottom:12px;">
+                <label class="sp-label" for="guest-nif">NIF (opcional)</label>
+                <input type="text" id="guest-nif" class="sp-input" placeholder="Ex: 123456789 (para incluir na fatura)" maxlength="9">
+            </div>
+            <div class="sp-input-row">
+                <label class="sp-label" for="guest-email">E-mail (obrigatório)</label>
+                <input type="email" id="guest-email" class="sp-input" placeholder="Para receber o bilhete e fatura" required>
+            </div>
+        </section>
+
+        <!-- Payment method (shown only when authenticated) -->
+        <section class="sp-card" id="metodo-section" style="display:none;">
+            <h2 class="sp-section-title">Método de pagamento</h2>
+            <button type="button" class="sp-ticket-type sp-ticket-active" id="metodo-saldo" style="width:100%;">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="5" width="20" height="14" rx="2"/>
+                    <path d="M16 12h4v4h-4a2 2 0 0 1 0-4z"/>
+                </svg>
+                <span>Saldo TUB</span>
+                <small id="saldo-disponivel" style="font-size:0.7rem;font-weight:600;opacity:0.75;">—</small>
+            </button>
+            <p id="aviso-saldo-insuficiente" style="display:none;font-size:0.82rem;color:#ef4444;margin-top:10px;text-align:center;">
+                Saldo insuficiente. <a href="carregar_saldo.html" style="color:#ef4444;font-weight:700;">Carregar conta →</a>
+            </p>
+        </section>
+
+        <!-- Price summary -->
+        <section class="sp-price-card">
+            <div class="sp-price-row">
+                <span id="preco-nome">—</span>
+                <strong id="preco-valor">—</strong>
+            </div>
+            <div class="sp-price-row">
+                <span>Taxa de serviço</span>
+                <strong>0,00 €</strong>
+            </div>
+            <div class="sp-price-divider"></div>
+            <div class="sp-price-row sp-price-total">
+                <span>Total</span>
+                <strong id="preco-total">—</strong>
+            </div>
+        </section>
+
+        <!-- Feedback de erro -->
+        <div id="compra-msg" style="display:none;padding:14px 16px;border-radius:14px;text-align:center;font-size:0.88rem;font-weight:600;margin:0 0 4px;"></div>
+
+        <!-- Estado de sucesso após compra -->
+        <div id="qr-section" class="sp-card" style="display:none;text-align:center;padding:24px 18px;">
+            <div style="width:52px;height:52px;border-radius:16px;background:rgba(52,199,89,0.15);color:#1aa855;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+            <p id="qr-titulo" style="font-size:1rem;font-weight:700;color:#1a1a2e;margin-bottom:4px;">Bilhete adquirido</p>
+            <p id="qr-subtitulo" style="font-size:0.82rem;color:#6b7280;margin-bottom:16px;"></p>
+            <!-- Botão Ver Carteira (autenticado) -->
+            <a id="btn-carteira" href="carteira.html" style="display:none;align-items:center;justify-content:center;gap:8px;padding:13px 20px;background:linear-gradient(135deg,var(--tub-blue),var(--tub-dark-blue));color:#fff;border-radius:14px;text-decoration:none;font-size:0.9rem;font-weight:700;box-shadow:0 4px 16px rgba(0,162,232,0.3);transition:transform 0.2s,box-shadow 0.2s;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M16 12h4v4h-4a2 2 0 0 1 0-4z"/></svg>
+                Ver na Carteira
+            </a>
+            <!-- Botão PDF (guest) -->
+            <a id="btn-pdf" href="#" target="_blank" style="display:none;align-items:center;justify-content:center;gap:8px;padding:13px 20px;background:linear-gradient(135deg,var(--tub-blue),var(--tub-dark-blue));color:#fff;border-radius:14px;text-decoration:none;font-size:0.9rem;font-weight:700;box-shadow:0 4px 16px rgba(0,162,232,0.3);">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Descarregar bilhete (PDF)
+            </a>
+        </div>
+
+        <button class="sp-cta-btn" id="btn-pagar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="5" width="20" height="14" rx="2"/>
+                <path d="M16 12h4v4h-4a2 2 0 0 1 0-4z"/>
+            </svg>
+            Pagar agora
+        </button>
+
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="kf-bottom-nav" aria-label="Navegação principal">
+        <a href="index.html" class="kf-nav-item" id="nav-inicio">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            <span>Início</span>
+        </a>
+        <a href="carteira.html" class="kf-nav-item" id="nav-carteira">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="5" width="20" height="14" rx="2"/>
+                <path d="M16 12h4v4h-4a2 2 0 0 1 0-4z"/>
+            </svg>
+            <span>Carteira</span>
+        </a>
+        <a href="pagamentos.html" class="kf-nav-item" id="nav-pagamentos">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                <line x1="1" y1="10" x2="23" y2="10"></line>
+            </svg>
+            <span>Pagamentos</span>
+        </a>
+        <a href="perfil.html" class="kf-nav-item" id="nav-perfil">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span>Perfil</span>
+        </a>
+    </nav>
+
+    <script>
+        const API_BASE = '';
+
+        let tiposBilhete = [];
+        let selectedTipoId = null;
+        let isAuthenticated = false;
+        let compraConcluida = false;
+        let selectedMetodo = 'SALDO_CONTA';
+        let saldoConta = null;
+
+        function formatPreco(v) {
+            return parseFloat(v).toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+        }
+
+        // ── Load ticket types ──────────────────────────────────────────────────
+
+        async function carregarTipos() {
+            try {
+                const res = await fetch(`${API_BASE}/api/tipos-bilhete`);
+                tiposBilhete = await res.json();
+
+                const grid = document.getElementById('tipo-bilhete-grid');
+
+                // Limpar completamente antes de renderizar
+                grid.innerHTML = '';
+
+                if (!tiposBilhete.length) {
+                    grid.innerHTML = '<p style="color:#9ca3af;font-size:0.85rem;text-align:center;">Sem tipos de bilhete disponíveis.</p>';
+                    return;
+                }
+
+                // Usar createElement para evitar qualquer serialização/parsing de data-id via innerHTML
+                tiposBilhete.forEach((t, i) => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'sp-ticket-type' + (i === 0 ? ' sp-ticket-active' : '');
+
+                    // Guardar referência direta ao objeto da API — nunca ler do dataset
+                    btn._tipoObj = { id: t.id, nome: t.nome, preco: t.preco };
+
+                    btn.innerHTML = `
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"></path>
+                            <line x1="9" y1="12" x2="15" y2="12"></line>
+                        </svg>
+                        <span>${t.nome.replace(/\s*\(.*\)/, '')}</span>
+                        <small style="font-size:0.7rem;font-weight:600;opacity:0.75;">${parseFloat(t.preco).toLocaleString('pt-PT', { minimumFractionDigits: 2 })} €</small>
+                    `;
+
+                    btn.addEventListener('click', () => {
+                        grid.querySelectorAll('.sp-ticket-type').forEach(b => b.classList.remove('sp-ticket-active'));
+                        btn.classList.add('sp-ticket-active');
+                        selecionarTipo(btn._tipoObj);
+                    });
+
+                    grid.appendChild(btn);
+                });
+
+                // Selecionar o primeiro por defeito usando o objeto original da API
+                selecionarTipo(tiposBilhete[0]);
+
+            } catch (e) {
+                console.error('[BILHETE] Erro ao carregar tipos:', e);
+                document.getElementById('tipo-bilhete-grid').innerHTML =
+                    '<p style="color:#ef4444;font-size:0.85rem;text-align:center;">Erro ao carregar tipos de bilhete.</p>';
+            }
+        }
+
+        function selecionarTipo(tipo) {
+            if (!tipo) return;
+            selectedTipoId = Number(tipo.id);
+            document.getElementById('preco-nome').textContent = tipo.nome;
+            document.getElementById('preco-valor').textContent = formatPreco(tipo.preco);
+            document.getElementById('preco-total').textContent = formatPreco(tipo.preco);
+            verificarAvisoSaldo();
+        }
+
+        // ── Payment method ─────────────────────────────────────────────────────
+
+        function selecionarMetodo(metodo) {
+            selectedMetodo = metodo;
+            document.getElementById('metodo-saldo').classList.toggle('sp-ticket-active', metodo === 'SALDO_CONTA');
+            verificarAvisoSaldo();
+        }
+
+        function verificarAvisoSaldo() {
+            const aviso = document.getElementById('aviso-saldo-insuficiente');
+            if (!aviso) return;
+            if (selectedMetodo !== 'SALDO_CONTA' || saldoConta === null || selectedTipoId === null) {
+                aviso.style.display = 'none';
+                return;
+            }
+            const tipo = tiposBilhete.find(t => t.id == selectedTipoId);
+            aviso.style.display = (tipo && saldoConta < parseFloat(tipo.preco)) ? '' : 'none';
+        }
+
+        async function carregarSaldo() {
+            try {
+                const res = await fetch(`${API_BASE}/api/user/conta`, { credentials: 'include' });
+                if (res.ok) {
+                    const data = await res.json();
+                    saldoConta = parseFloat(data.saldo);
+                    document.getElementById('saldo-disponivel').textContent =
+                        saldoConta.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+                }
+            } catch (e) {
+                console.error('[BILHETE] Erro ao carregar saldo:', e);
+            }
+        }
+
+        // ── Load lines for the dropdown ────────────────────────────────────────
+
+        async function carregarLinhas() {
+            try {
+                const res = await fetch(`${API_BASE}/api/linhas`);
+                const linhas = await res.json();
+                const sel = document.getElementById('sel-linha');
+                sel.innerHTML = '<option value="">Escolha uma linha...</option>' +
+                    linhas.map(l => `<option value="${l.id}">Linha ${l.numero} – ${l.origem} → ${l.destino}</option>`).join('');
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        // ── Check session to show/hide guest fields ────────────────────────────
+
+        async function verificarSessao() {
+            try {
+                const res = await fetch(`${API_BASE}/api/me`, { credentials: 'include' });
+                if (res.ok) {
+                    isAuthenticated = true;
+                    document.getElementById('guest-section').style.display = 'none';
+                    document.getElementById('metodo-section').style.display = '';
+                    await carregarSaldo();
+                } else {
+                    isAuthenticated = false;
+                    document.getElementById('guest-section').style.display = '';
+                }
+            } catch {
+                isAuthenticated = false;
+                document.getElementById('guest-section').style.display = '';
+            }
+        }
+
+        // ── Purchase ───────────────────────────────────────────────────────────
+
+        document.getElementById('btn-pagar').addEventListener('click', async () => {
+            if (compraConcluida) { window.location.reload(); return; }
+
+            const msg = document.getElementById('compra-msg');
+            const btn = document.getElementById('btn-pagar');
+
+            if (!selectedTipoId) {
+                msg.style.display = '';
+                msg.style.background = '#fef2f2';
+                msg.style.color = '#ef4444';
+                msg.textContent = 'Por favor selecione um tipo de bilhete.';
+                return;
+            }
+
+            btn.textContent = 'A processar…';
+            btn.disabled = true;
+            msg.style.display = 'none';
+            document.getElementById('qr-section').style.display = 'none';
+
+            const linhaId = document.getElementById('sel-linha').value || null;
+            const guestEmail = document.getElementById('guest-email')?.value.trim() || null;
+            const guestNome = document.getElementById('guest-nome')?.value.trim() || null;
+            const guestNif = document.getElementById('guest-nif')?.value.trim() || null;
+
+            if (!isAuthenticated && (!guestEmail || !guestNome)) {
+                msg.style.display = '';
+                msg.style.background = '#fef2f2';
+                msg.style.color = '#ef4444';
+                msg.textContent = 'Por favor preencha o Nome e E-mail para continuar como visitante.';
+                btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M16 12h4v4h-4a2 2 0 0 1 0-4z"/></svg> Pagar agora`;
+                btn.disabled = false;
+                return;
+            }
+
+            const endpoint = isAuthenticated
+                ? `${API_BASE}/api/user/bilhetes`
+                : `${API_BASE}/api/pagamentos/guest/bilhete`;
+            const payload = isAuthenticated
+                ? { tipoBilheteId: selectedTipoId, linhaId, metodo: selectedMetodo }
+                : { tipoBilheteId: selectedTipoId, linhaId, guestEmail, guestNome, guestNif };
+
+            try {
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.status === 401 || res.status === 403) {
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                let data;
+                try { data = await res.json(); } catch { data = {}; }
+
+                if (res.ok && data.codigoQr) {
+                    compraConcluida = true;
+                    msg.style.display = 'none';
+
+                    const qrSection = document.getElementById('qr-section');
+                    document.getElementById('qr-titulo').textContent = 'Bilhete adquirido';
+                    document.getElementById('qr-subtitulo').textContent = isAuthenticated
+                        ? 'Pagamento confirmado. O bilhete está disponível na sua carteira.'
+                        : (guestEmail ? 'Verifique o seu email — enviámos o bilhete para ' + guestEmail + '.' : 'Bilhete comprado com sucesso.');
+                    qrSection.style.display = '';
+
+                    if (isAuthenticated) {
+                        document.getElementById('btn-carteira').style.display = 'flex';
+                    } else if (data.id && guestNif) {
+                        const btnPdf = document.getElementById('btn-pdf');
+                        btnPdf.href = `/api/pagamentos/guest/bilhete/${data.id}/pdf?nif=${encodeURIComponent(guestNif)}`;
+                        btnPdf.style.display = 'flex';
+                    }
+                } else {
+                    msg.style.display = '';
+                    msg.style.background = '#fef2f2';
+                    msg.style.color = '#ef4444';
+                    if (data.message && data.message.toLowerCase().includes('saldo insuficiente')) {
+                        msg.innerHTML = 'Saldo insuficiente. <a href="carregar_saldo.html" style="color:#ef4444;font-weight:700;">Carregar conta →</a>';
+                    } else if (res.status === 400 && data.message) {
+                        msg.textContent = data.message;
+                    } else if (res.status >= 500) {
+                        msg.textContent = 'Ocorreu um erro no servidor. Tente novamente mais tarde.';
+                    } else {
+                        msg.textContent = data.message || 'Erro ao processar compra.';
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+                msg.style.display = '';
+                msg.style.background = '#fef2f2';
+                msg.style.color = '#ef4444';
+                msg.textContent = 'Erro ao comunicar com o servidor.';
+            } finally {
+                if (compraConcluida) {
+                    btn.innerHTML = `
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"></path>
+                            <line x1="9" y1="12" x2="15" y2="12"></line>
+                        </svg>
+                        Comprar novo bilhete`;
+                } else {
+                    btn.innerHTML = `
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="2" y="5" width="20" height="14" rx="2"/>
+                            <path d="M16 12h4v4h-4a2 2 0 0 1 0-4z"/>
+                        </svg>
+                        Pagar agora`;
+                }
+                btn.disabled = false;
+            }
+        });
+
+        // ── Init ───────────────────────────────────────────────────────────────
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            document.getElementById('metodo-saldo').addEventListener('click', () => selecionarMetodo('SALDO_CONTA'));
+            // Verificar sessão primeiro, depois carregar os tipos
+            await verificarSessao();
+            await carregarTipos();   // await para garantir que selectedTipoId está definido antes do utilizador interagir
+            carregarLinhas();
+        });
+    </script>
+</body>
+</html>
