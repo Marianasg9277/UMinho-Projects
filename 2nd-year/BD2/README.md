@@ -30,5 +30,5 @@ The system processes complex queries to extract business value, answering critic
 * Ana Íris Machado Torres (a110489)
 * Daniela Gomes Paulino (a109519)
 * Maria Leonor Gomes Sampaio (a111427)
-* Maria Nair da Cunha e Silva Lacerda  (a111488)Ângelo
+* Maria Nair da Cunha e Silva Lacerda Ângelo (a111488)
 * Mariana Silva Gomes (a110943)
